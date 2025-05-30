@@ -138,7 +138,7 @@ const HomePage: React.FC = () => {
                   Freshly baked flaky butter croissant
                 </p>
                 <div className="flex justify-between items-center">
-                  <span className="text-primary font-bold">R 35</span>
+                  <span className="text-primary font-bold">R 36</span>
                 </div>
               </div>
             </div>
