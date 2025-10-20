@@ -1,19 +1,20 @@
 import React, { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { 
-  CoffeeIcon, 
-  LayoutDashboard, 
-  ShoppingBag, 
-  List, 
-  Users, 
-  LogOut, 
+import {
+  CoffeeIcon,
+  LayoutDashboard,
+  ShoppingBag,
+  List,
+  Users,
+  LogOut,
   ChevronLeft,
   Menu
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import AdminBottomNav from './AdminBottomNav';
 
 const AdminLayout: React.FC = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -24,11 +25,11 @@ const AdminLayout: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-dark">
-      {/* Sidebar */}
-      <aside 
+      {/* Sidebar - Hidden on mobile, shown on desktop */}
+      <aside
         className={`${
           sidebarOpen ? 'w-64' : 'w-20'
-        } bg-dark-light transition-all duration-300 fixed h-full z-10`}
+        } bg-dark-light transition-all duration-300 hidden md:block fixed h-full z-10`}
       >
         <div className="flex items-center justify-between p-4 border-b border-dark-lighter">
           <div className={`flex items-center ${!sidebarOpen && 'justify-center w-full'}`}>
@@ -41,8 +42,8 @@ const AdminLayout: React.FC = () => {
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="p-1 rounded-md hover:bg-dark-lighter"
           >
-            <ChevronLeft 
-              className={`w-5 h-5 transition-transform ${!sidebarOpen && 'rotate-180'}`} 
+            <ChevronLeft
+              className={`w-5 h-5 transition-transform ${!sidebarOpen && 'rotate-180'}`}
             />
           </button>
         </div>
@@ -53,7 +54,7 @@ const AdminLayout: React.FC = () => {
               <NavLink
                 to="/admin"
                 end
-                className={({ isActive }) => 
+                className={({ isActive }) =>
                   `flex items-center p-3 rounded-lg ${
                     isActive ? 'bg-primary text-dark' : 'text-gray-400 hover:bg-dark-lighter'
                   }`
@@ -66,7 +67,7 @@ const AdminLayout: React.FC = () => {
             <li>
               <NavLink
                 to="/admin/orders"
-                className={({ isActive }) => 
+                className={({ isActive }) =>
                   `flex items-center p-3 rounded-lg ${
                     isActive ? 'bg-primary text-dark' : 'text-gray-400 hover:bg-dark-lighter'
                   }`
@@ -79,7 +80,7 @@ const AdminLayout: React.FC = () => {
             <li>
               <NavLink
                 to="/admin/menu"
-                className={({ isActive }) => 
+                className={({ isActive }) =>
                   `flex items-center p-3 rounded-lg ${
                     isActive ? 'bg-primary text-dark' : 'text-gray-400 hover:bg-dark-lighter'
                   }`
@@ -92,7 +93,7 @@ const AdminLayout: React.FC = () => {
             <li>
               <NavLink
                 to="/admin/users"
-                className={({ isActive }) => 
+                className={({ isActive }) =>
                   `flex items-center p-3 rounded-lg ${
                     isActive ? 'bg-primary text-dark' : 'text-gray-400 hover:bg-dark-lighter'
                   }`
@@ -125,23 +126,51 @@ const AdminLayout: React.FC = () => {
       </aside>
 
       {/* Main content */}
-      <div className={`flex-1 ${sidebarOpen ? 'ml-64' : 'ml-20'} transition-all duration-300`}>
-        <header className="bg-dark-light shadow-md py-4 px-6 flex items-center justify-between">
-          <button 
-            className="md:hidden" 
+      <div className={`flex-1 ${sidebarOpen ? 'md:ml-64' : 'md:ml-20'} transition-all duration-300`}>
+        {/* Mobile Header - Only show on mobile */}
+        <header className="bg-dark-light shadow-md py-4 px-6 flex items-center justify-between md:hidden">
+          <button
+            className="p-2"
             onClick={() => setSidebarOpen(!sidebarOpen)}
+            aria-label="Toggle menu"
           >
-            <Menu className="w-6 h-6" />
+            <Menu className="w-6 h-6 text-white" />
           </button>
+          <h1 className="text-lg font-serif text-white">Bear&Bean Admin</h1>
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-gray-400 hidden sm:block">Welcome, {user?.name}</span>
+            <button
+              onClick={handleLogout}
+              className="p-2 text-gray-400 hover:text-white"
+              aria-label="Logout"
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
+          </div>
+        </header>
+
+        {/* Desktop Header - Only show on desktop */}
+        <header className="hidden md:flex bg-dark-light shadow-md py-4 px-6 items-center justify-between">
           <h1 className="text-xl font-serif">Bear&Bean Admin</h1>
           <div className="flex items-center space-x-4">
             <span className="text-sm text-gray-400">Welcome, {user?.name}</span>
+            <button
+              onClick={handleLogout}
+              className="p-2 text-gray-400 hover:text-white rounded-full"
+              aria-label="Logout"
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
           </div>
         </header>
-        <main className="p-6">
+
+        <main className="p-4 md:p-6 pb-20 md:pb-6">
           <Outlet />
         </main>
       </div>
+
+      {/* Bottom Navigation for Mobile */}
+      <AdminBottomNav />
     </div>
   );
 };

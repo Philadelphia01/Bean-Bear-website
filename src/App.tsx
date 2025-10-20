@@ -1,4 +1,3 @@
-import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Layout from './components/layout/Layout';
 import HomePage from './pages/HomePage';
@@ -6,7 +5,12 @@ import MenuPage from './pages/MenuPage';
 import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
 import OrderPage from './pages/OrderPage';
+import CheckoutPage from './pages/CheckoutPage';
+import OrderHistoryPage from './pages/OrderHistoryPage';
+import ProfilePage from './pages/ProfilePage';
 import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import CustomerLoginPage from './pages/CustomerLoginPage';
 import AdminLayout from './components/admin/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminOrders from './pages/admin/AdminOrders';
@@ -24,10 +28,15 @@ function App() {
         <Route path="about" element={<AboutPage />} />
         <Route path="contact" element={<ContactPage />} />
         <Route path="order" element={<OrderPage />} />
+        <Route path="checkout" element={<CheckoutPage />} />
+        <Route path="order-history" element={<OrderHistoryPage />} />
+        <Route path="profile" element={<ProfilePage />} />
       </Route>
-      
-      <Route path="/login" element={<LoginPage />} />
-      
+
+      <Route path="/login" element={<CustomerLoginPage />} />
+      <Route path="/admin-login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+
       <Route path="/admin" element={
         <ProtectedRoute>
           <AdminLayout />
@@ -38,7 +47,7 @@ function App() {
         <Route path="menu" element={<AdminMenu />} />
         <Route path="users" element={<AdminUsers />} />
       </Route>
-      
+
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );

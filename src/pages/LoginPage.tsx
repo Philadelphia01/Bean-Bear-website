@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { CoffeeIcon, LogIn, AlertCircle } from 'lucide-react';
+import { CoffeeIcon, LogIn, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -17,7 +18,7 @@ const LoginPage: React.FC = () => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
-    
+
     try {
       await login(email, password);
       toast.success('Login successful');
@@ -30,8 +31,8 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-dark p-4">
-      <div className="max-w-md w-full bg-dark-light rounded-lg shadow-lg p-8">
+    <div className="min-h-screen flex items-center justify-center bg-dark p-4 pb-20">
+      <div className="max-w-md w-full bg-dark-light rounded-lg shadow-lg p-6 md:p-8">
         <div className="text-center mb-8">
           <Link to="/" className="inline-block">
             <CoffeeIcon className="w-12 h-12 text-primary mx-auto mb-2" />
@@ -39,14 +40,14 @@ const LoginPage: React.FC = () => {
           </Link>
           <p className="text-gray-400 mt-2">Admin Dashboard Login</p>
         </div>
-        
+
         {error && (
           <div className="mb-6 p-4 bg-red-500/10 border border-red-500 rounded-lg flex items-center">
             <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
             <p className="text-red-500 text-sm">{error}</p>
           </div>
         )}
-        
+
         <form onSubmit={handleSubmit}>
           <div className="mb-6">
             <label htmlFor="email" className="block mb-2 font-medium">Email</label>
@@ -60,24 +61,33 @@ const LoginPage: React.FC = () => {
               required
             />
           </div>
-          
+
           <div className="mb-6">
             <label htmlFor="password" className="block mb-2 font-medium">Password</label>
-            <input
-              type="password"
-              id="password"
-              className="input"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-              required
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                id="password"
+                className="input pr-10"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+                required
+              />
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
             <p className="mt-2 text-sm text-gray-500">
-              Demo accounts: owner@coffee.com, manager@coffee.com, 
+              Demo accounts: owner@coffee.com, manager@coffee.com,
               supervisor@coffee.com, waiter@coffee.com (any password)
             </p>
           </div>
-          
+
           <button
             type="submit"
             className="w-full btn btn-primary flex items-center justify-center"
@@ -93,10 +103,19 @@ const LoginPage: React.FC = () => {
             )}
           </button>
         </form>
-        
+
         <div className="mt-6 text-center">
+          <p className="text-gray-400">
+            Don't have an account?{' '}
+            <Link to="/register" className="text-primary hover:underline">
+              Sign Up
+            </Link>
+          </p>
+        </div>
+
+        <div className="mt-4 text-center">
           <Link to="/" className="text-primary hover:underline">
-            Return to Website
+            Return to Home
           </Link>
         </div>
       </div>

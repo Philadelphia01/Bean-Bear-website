@@ -1,195 +1,225 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Coffee, Award, Truck } from 'lucide-react';
-import icedCoffeeImage from '../components/images/icedcoffe.jpeg';
+import { useCart } from '../contexts/CartContext';
+import { useAuth } from '../contexts/AuthContext';
+import {
+  ShoppingCart,
+  User,
+  Search,
+  Coffee,
+  Plus,
+  Star,
+  LogOut,
+  Settings
+} from 'lucide-react';
+import toast from 'react-hot-toast';
+import { menuItems } from '../data/menuItems';
+
 const HomePage: React.FC = () => {
+  const [activeCategory, setActiveCategory] = useState('All');
+  const { addToCart, cartItems } = useCart();
+  const { user, logout, isAuthenticated } = useAuth();
+
+  const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+
+  // Get unique categories from menu items
+  const categories = ['All', ...Array.from(new Set(menuItems.map(item => item.category)))];
+
+  // Get all products or filtered products
+  const getFilteredProducts = () => {
+    if (activeCategory === 'All') {
+      return menuItems; // Show all menu items when "All" is selected
+    }
+    return menuItems.filter(product => product.category === activeCategory);
+  };
+
+  const filteredProducts = getFilteredProducts();
+
+  const handleLogout = () => {
+    logout();
+    toast.success('Logged out successfully');
+  };
+
+  const handleAddToCart = (product: any) => {
+    addToCart(product);
+    toast.success(`${product.title} added to cart!`);
+  };
+
   return (
-    <div>
-      {/* Hero Section */}
-      <section 
-        className="relative min-h-screen flex items-center justify-center bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: "url('https://images.pexels.com/photos/585750/pexels-photo-585750.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2')" }}
+    <div className="min-h-screen bg-dark">
+      {/* Header with Greeting and Profile */}
+      <div className="bg-dark-light pt-12 pb-6 px-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <p className="text-primary text-sm font-medium">Good Morning</p>
+            <h1 className="text-white text-xl font-bold">John Smith</h1>
+          </div>
+          <div className="flex items-center space-x-3">
+            {/* Cart Icon */}
+            <Link
+              to="/order"
+              className="relative p-2 text-primary hover:text-primary-dark transition-colors"
+              aria-label="Shopping Cart"
+            >
+              <ShoppingCart className="w-6 h-6" />
+              {totalItems > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-xs flex items-center justify-center text-white font-bold">
+                  {totalItems > 99 ? '99+' : totalItems}
+                </span>
+              )}
+            </Link>
+
+            {/* Profile Avatar */}
+            {isAuthenticated ? (
+              <div className="relative group">
+                <Link
+                  to="/profile"
+                  className="w-12 h-12 bg-primary rounded-full flex items-center justify-center hover:bg-primary-dark transition-colors"
+                  title="View Profile"
+                >
+                  <User className="w-6 h-6 text-dark" />
+                </Link>
+
+                {/* Dropdown Menu */}
+                <div className="absolute right-0 top-full mt-2 w-48 bg-dark-light rounded-lg shadow-lg border border-primary/20 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                  <div className="p-2">
+                    <div className="px-3 py-2 text-sm text-gray-300 border-b border-primary/20">
+                      Welcome, {user?.name || 'User'}
+                    </div>
+                    <Link
+                      to="/profile"
+                      className="flex items-center px-3 py-2 text-white hover:bg-primary/10 rounded-md transition-colors"
+                    >
+                      <Settings className="w-4 h-4 mr-2" />
+                      Profile Settings
+                    </Link>
+                    <Link
+                      to="/order-history"
+                      className="flex items-center px-3 py-2 text-white hover:bg-primary/10 rounded-md transition-colors"
+                    >
+                      <ShoppingCart className="w-4 h-4 mr-2" />
+                      Order History
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center w-full px-3 py-2 text-white hover:bg-red-500/10 rounded-md transition-colors"
+                    >
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Logout
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <Link
+                to="/login"
+                className="w-12 h-12 bg-primary rounded-full flex items-center justify-center hover:bg-primary-dark transition-colors"
+                title="Login / Register"
+              >
+                <User className="w-6 h-6 text-dark" />
+              </Link>
+            )}
+          </div>
+        </div>
+
+        {/* Search Bar */}
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-primary w-5 h-5" />
+          <input
+            type="text"
+            placeholder="Search coffee..."
+            className="w-full pl-12 pr-4 py-3 bg-dark border border-primary/20 rounded-full text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+        </div>
+      </div>
+
+      {/* Promo Banner with Background */}
+      <div
+        className="mx-6 mb-6 rounded-2xl p-6 flex items-center bg-cover bg-center"
+        style={{
+          backgroundImage: "url('https://images.pexels.com/photos/585750/pexels-photo-585750.jpeg?auto=compress&cs=tinysrgb&w=800')",
+        }}
       >
-        <div className="absolute inset-0 bg-dark bg-opacity-70"></div>
-        <div className="container relative z-10 px-6 py-24 mx-auto text-center">
-          <h2 className="text-primary uppercase tracking-wider mb-2 fade-in">SINCE 2005</h2>
-          <h1 className="text-4xl md:text-6xl font-bold mb-4 text-white font-serif slide-up">
-            Experience the Finest<br />
-            <span className="text-primary">Coffee Collection</span>
-          </h1>
-          <p className="max-w-2xl mx-auto text-lg mb-8 text-gray-300 slide-up">
-            Indulge in a world of premium coffee beans meticulously sourced from the 
-            world's finest coffee regions and expertly roasted to perfection.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center slide-up">
-            <Link to="/menu" className="btn btn-primary">
-              Explore Our Collection
-            </Link>
-            <Link to="/about" className="btn btn-outline">
-              Our Story
-            </Link>
+        <div className="backdrop-blur-sm bg-dark/50 rounded-xl p-4 flex items-center w-full">
+          <div className="flex-1">
+            <h3 className="text-white text-lg font-bold mb-1">Buy 2 Coffee and</h3>
+            <p className="text-primary text-sm">Treat Friends</p>
+          </div>
+          <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center">
+            <Coffee className="w-8 h-8 text-primary" />
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* Features Section */}
-      <section className="py-20 bg-dark-light">
-        <div className="container">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 font-serif">
-              Why Choose <span className="text-primary">Bear&Bean</span>
-            </h2>
-            <p className="max-w-2xl mx-auto text-gray-400">
-              We're dedicated to bringing you the finest coffee experience through quality, 
-              craftsmanship, and exceptional service.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-dark p-8 rounded-lg text-center">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Coffee className="w-8 h-8 text-primary" />
-              </div>
-              <h3 className="text-xl font-bold mb-4">Premium Beans</h3>
-              <p className="text-gray-400">
-                We source only the highest quality beans from sustainable farms around the world.
-              </p>
-            </div>
-
-            <div className="bg-dark p-8 rounded-lg text-center">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Award className="w-8 h-8 text-primary" />
-              </div>
-              <h3 className="text-xl font-bold mb-4">Expert Roasting</h3>
-              <p className="text-gray-400">
-                Our master roasters bring out the unique flavor profile of each bean variety.
-              </p>
-            </div>
-
-            <div className="bg-dark p-8 rounded-lg text-center">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Truck className="w-8 h-8 text-primary" />
-              </div>
-              <h3 className="text-xl font-bold mb-4">Fast Delivery</h3>
-              <p className="text-gray-400">
-                Fresh coffee delivered to your doorstep in Cape Town and surrounding areas.
-              </p>
-            </div>
-          </div>
+      {/* Categories */}
+      <div className="px-6 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-white text-lg font-bold">Category</h2>
+          <Link to="/menu" className="text-primary text-sm hover:underline">
+            View all
+          </Link>
         </div>
-      </section>
-
-      {/* Menu Preview */}
-      <section className="py-20 bg-dark">
-        <div className="container">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 font-serif">
-              Our <span className="text-primary">Menu Highlights</span>
-            </h2>
-            <p className="max-w-2xl mx-auto text-gray-400">
-              A taste of what we offer at Bear&Bean
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="card">
-              <img 
-                src="https://images.pexels.com/photos/312418/pexels-photo-312418.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1" 
-                alt="Cappuccino" 
-                className="w-full h-48 object-cover"
-              />
-              <div className="p-6">
-                <h3 className="text-lg font-bold mb-2">Cappuccino</h3>
-                <p className="text-gray-400 mb-4">
-                  Espresso with steamed milk and thick foam
-                </p>
-                <div className="flex justify-between items-center">
-                  <span className="text-primary font-bold">R 38</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="card">
-              <img 
-                src="https://images.pexels.com/photos/139746/pexels-photo-139746.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1" 
-                alt="Eggs Benedict" 
-                className="w-full h-48 object-cover"
-              />
-              <div className="p-6">
-                <h3 className="text-lg font-bold mb-2">Eggs Benedict</h3>
-                <p className="text-gray-400 mb-4">
-                  Poached eggs on English muffin with hollandaise
-                </p>
-                <div className="flex justify-between items-center">
-                  <span className="text-primary font-bold">R 95</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="card">
-              <img 
-                src="https://images.pexels.com/photos/2135/food-france-morning-breakfast.jpg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1" 
-                alt="Butter Croissant" 
-                className="w-full h-48 object-cover"
-              />
-              <div className="p-6">
-                <h3 className="text-lg font-bold mb-2">Butter Croissant</h3>
-                <p className="text-gray-400 mb-4">
-                  Freshly baked flaky butter croissant
-                </p>
-                <div className="flex justify-between items-center">
-                  <span className="text-primary font-bold">R 36</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="card">
-              <img 
-                src={ icedCoffeeImage} 
-                alt="Iced Coffee" 
-                className="w-full h-48 object-cover"
-              />
-              <div className="p-6">
-                <h3 className="text-lg font-bold mb-2">Iced Coffee</h3>
-                <p className="text-gray-400 mb-4">
-                  Cold brew coffee served over ice
-                </p>
-                <div className="flex justify-between items-center">
-                  <span className="text-primary font-bold">R 35</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="text-center mt-12">
-            <Link to="/menu" className="btn btn-primary">
-              View Full Menu
-            </Link>
-          </div>
+        <div className="flex space-x-3 overflow-x-auto pb-2">
+          {categories.map((category) => (
+            <button
+              key={category}
+              onClick={() => setActiveCategory(category)}
+              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                activeCategory === category
+                  ? 'bg-primary text-dark'
+                  : 'bg-dark-light text-primary border border-primary/30'
+              }`}
+            >
+              {category === 'All' ? 'All' : category.charAt(0).toUpperCase() + category.slice(1)}
+            </button>
+          ))}
         </div>
-      </section>
+      </div>
 
-      {/* CTA Section */}
-      <section className="py-20 bg-primary bg-opacity-10">
-        <div className="container">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-3xl md:text-4xl font-bold mb-6 font-serif">
-              Ready to Experience the <span className="text-primary">Perfect Cup?</span>
-            </h2>
-            <p className="text-lg mb-8 text-gray-300">
-              Visit our coffee shop in Cape Town or order online for delivery. We're ready to serve you the finest coffee experience.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/order" className="btn btn-primary">
-                Order Now
-              </Link>
-              <Link to="/contact" className="btn btn-outline">
-                Find Us
-              </Link>
+      {/* Products Grid */}
+      <div className="px-6 pb-6">
+        <div className={`grid gap-4 ${
+          activeCategory === 'All'
+            ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
+            : 'grid-cols-2'
+        }`}>
+          {filteredProducts.map((product) => (
+            <div key={product.id} className="bg-dark-light rounded-2xl p-4 h-full flex flex-col">
+              <div className="relative mb-3 flex-shrink-0">
+                <img
+                  src={product.image}
+                  alt={product.title}
+                  className="w-full h-32 object-cover rounded-xl"
+                />
+                <div className="absolute top-2 right-2 bg-primary/90 rounded-full p-1">
+                  <Star className="w-4 h-4 text-dark fill-current" />
+                </div>
+              </div>
+
+              <div className="flex-grow">
+                <h3 className="text-white font-bold text-sm mb-1 line-clamp-2">{product.title}</h3>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-primary font-bold">R {product.price}</span>
+                  <span className="text-xs text-primary bg-primary/20 px-2 py-1 rounded-full">
+                    4.5 ★
+                  </span>
+                </div>
+              </div>
+
+              <button
+                onClick={() => handleAddToCart(product)}
+                className="w-full bg-primary text-dark py-2 rounded-full text-sm font-medium hover:bg-primary-dark transition-colors flex items-center justify-center mt-auto"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add to Cart
+              </button>
             </div>
-          </div>
+          ))}
         </div>
-      </section>
+      </div>
+
+      {/* Bottom Navigation Space */}
+      <div className="h-20"></div>
     </div>
   );
 };

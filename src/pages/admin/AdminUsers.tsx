@@ -26,7 +26,7 @@ const AdminUsers: React.FC = () => {
   });
 
   const canEditUsers = hasPermission('supervisor');
-  
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -68,7 +68,7 @@ const AdminUsers: React.FC = () => {
     // In a real app, this would update the database
     console.log('Saving user:', formData);
     toast.success(`${editingUser ? 'Updated' : 'Added'} user successfully`);
-    
+
     if (editingUser) {
       // Update existing user
       setUsers(prev => prev.map(u => u.id === editingUser ? { ...formData, id: u.id } : u));
@@ -76,7 +76,7 @@ const AdminUsers: React.FC = () => {
       // Add new user
       setUsers(prev => [...prev, { ...formData, id: `user-${Date.now()}` }]);
     }
-    
+
     setEditingUser(null);
     setShowAddForm(false);
   };
@@ -107,58 +107,58 @@ const AdminUsers: React.FC = () => {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold font-serif">User Management</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+        <h1 className="text-xl md:text-2xl font-bold font-serif">User Management</h1>
         {canEditUsers && (
-          <button 
+          <button
             onClick={handleAddNew}
-            className="px-4 py-2 bg-primary text-dark rounded-md flex items-center"
+            className="px-4 py-2 bg-primary text-dark rounded-md flex items-center text-sm font-medium"
           >
             <UserPlus className="w-4 h-4 mr-2" />
             Add New User
           </button>
         )}
       </div>
-      
+
       {/* Add/Edit Form */}
       {canEditUsers && (showAddForm || editingUser) && (
-        <div className="bg-dark-light rounded-lg p-6 mb-8">
-          <h2 className="text-xl font-bold mb-4">
+        <div className="bg-dark-light rounded-lg p-4 md:p-6 mb-6 md:mb-8">
+          <h2 className="text-lg md:text-xl font-bold mb-4">
             {editingUser ? 'Edit User' : 'Add New User'}
           </h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block mb-2">Name</label>
+              <label className="block mb-2 text-sm">Name</label>
               <input
                 type="text"
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
-                className="input"
+                className="input text-sm"
                 required
               />
             </div>
-            
+
             <div>
-              <label className="block mb-2">Email</label>
+              <label className="block mb-2 text-sm">Email</label>
               <input
                 type="email"
                 name="email"
                 value={formData.email}
                 onChange={handleInputChange}
-                className="input"
+                className="input text-sm"
                 required
               />
             </div>
-            
+
             <div>
-              <label className="block mb-2">Role</label>
+              <label className="block mb-2 text-sm">Role</label>
               <select
                 name="role"
                 value={formData.role}
                 onChange={handleInputChange}
-                className="input"
+                className="input text-sm"
                 required
               >
                 {hasPermission('owner') && <option value="owner">Owner</option>}
@@ -167,39 +167,79 @@ const AdminUsers: React.FC = () => {
                 <option value="waiter">Waiter</option>
               </select>
             </div>
-            
+
             <div>
-              <label className="block mb-2">Password {editingUser && '(leave blank to keep current)'}</label>
+              <label className="block mb-2 text-sm">Password {editingUser && '(leave blank to keep current)'}</label>
               <input
                 type="password"
                 name="password"
                 value={formData.password}
                 onChange={handleInputChange}
-                className="input"
+                className="input text-sm"
                 required={!editingUser}
               />
             </div>
           </div>
-          
-          <div className="flex justify-end space-x-4 mt-6">
-            <button 
+
+          <div className="flex flex-col sm:flex-row justify-end gap-2 mt-4 md:mt-6">
+            <button
               onClick={handleCancelEdit}
-              className="px-4 py-2 border border-gray-600 rounded-md"
+              className="px-4 py-2 border border-gray-600 rounded-md text-sm"
             >
               Cancel
             </button>
-            <button 
+            <button
               onClick={handleSave}
-              className="px-4 py-2 bg-primary text-dark rounded-md"
+              className="px-4 py-2 bg-primary text-dark rounded-md text-sm"
             >
               Save
             </button>
           </div>
         </div>
       )}
-      
-      {/* Users Table */}
-      <div className="bg-dark-light rounded-lg overflow-hidden">
+
+      {/* Users - Mobile Cards */}
+      <div className="block md:hidden space-y-4 mb-6">
+        {users.map((userData) => (
+          <div key={userData.id} className="bg-dark-light rounded-lg p-4">
+            <div className="flex items-center mb-3">
+              <div className="w-12 h-12 bg-dark rounded-full flex items-center justify-center mr-4">
+                <User className="w-6 h-6 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-lg">{userData.name}</h3>
+                <p className="text-sm text-gray-400">{userData.email}</p>
+                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getRoleBadgeClass(userData.role)}`}>
+                  <Shield className="w-3 h-3 mr-1" />
+                  {userData.role.charAt(0).toUpperCase() + userData.role.slice(1)}
+                </span>
+              </div>
+            </div>
+
+            {canEditUsers && (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleEditClick(userData)}
+                  className="flex-1 py-2 text-blue-400 hover:text-blue-300 text-sm"
+                >
+                  Edit
+                </button>
+                {user?.id !== userData.id && (
+                  <button
+                    onClick={() => handleDelete(userData.id)}
+                    className="flex-1 py-2 text-red-400 hover:text-red-300 text-sm"
+                  >
+                    Delete
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop Table */}
+      <div className="hidden md:block bg-dark-light rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead className="bg-dark-lighter">
@@ -233,7 +273,7 @@ const AdminUsers: React.FC = () => {
                   {canEditUsers && (
                     <td className="px-6 py-4">
                       <div className="flex space-x-2">
-                        <button 
+                        <button
                           onClick={() => handleEditClick(userData)}
                           className="p-1 text-blue-400 hover:text-blue-300"
                           title="Edit"
@@ -241,7 +281,7 @@ const AdminUsers: React.FC = () => {
                           <Edit2 className="w-5 h-5" />
                         </button>
                         {user?.id !== userData.id && (
-                          <button 
+                          <button
                             onClick={() => handleDelete(userData.id)}
                             className="p-1 text-red-400 hover:text-red-300"
                             title="Delete"
@@ -258,11 +298,11 @@ const AdminUsers: React.FC = () => {
           </table>
         </div>
       </div>
-      
-      {/* Permissions Info */}
-      <div className="mt-8">
+
+      {/* Permissions Info - Hidden on mobile for space */}
+      <div className="hidden lg:block mt-8">
         <h2 className="text-xl font-bold mb-4">Role Permissions</h2>
-        
+
         <div className="bg-dark-light rounded-lg p-6">
           <div className="overflow-x-auto">
             <table className="w-full">

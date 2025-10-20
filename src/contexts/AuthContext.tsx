@@ -4,7 +4,18 @@ type User = {
   id: string;
   name: string;
   email: string;
+  phone?: string;
   role: 'owner' | 'manager' | 'supervisor' | 'waiter' | 'customer';
+};
+
+type CustomerUser = {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  loyaltyPoints: number;
+  memberSince: string;
+  favoriteOrders: string[];
 };
 
 type AuthContextType = {
@@ -33,8 +44,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // Check if user is logged in from localStorage
     const storedUser = localStorage.getItem('user');
+    const storedCustomerUser = localStorage.getItem('customerUser');
+
     if (storedUser) {
       setUser(JSON.parse(storedUser));
+      setIsAuthenticated(true);
+    } else if (storedCustomerUser) {
+      const customerUser = JSON.parse(storedCustomerUser);
+      // Convert customer user to regular User type for consistency
+      const user: User = {
+        id: customerUser.id,
+        name: customerUser.name,
+        email: customerUser.email,
+        phone: customerUser.phone,
+        role: 'customer'
+      };
+      setUser(user);
       setIsAuthenticated(true);
     }
   }, []);
@@ -67,6 +92,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     localStorage.removeItem('user');
+    localStorage.removeItem('customerUser');
     setUser(null);
     setIsAuthenticated(false);
   };
