@@ -1,15 +1,11 @@
 import React, { useState } from 'react';
-import { Link, NavLink, useLocation } from 'react-router-dom';
-import { UserCircle, CoffeeIcon } from 'lucide-react';
+import { Link, NavLink } from 'react-router-dom';
+import { UserCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 const Navbar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const { isAuthenticated } = useAuth();
-  const location = useLocation();
-
-  // Show branding only on non-home pages
-  const showBranding = location.pathname !== '/';
 
   React.useEffect(() => {
     const handleScroll = () => {
@@ -24,14 +20,10 @@ const Navbar: React.FC = () => {
     <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-dark shadow-lg' : 'bg-transparent'}`}>
       <div className="container py-4 mx-auto">
         <nav className="flex items-center justify-between">
-          <Link to="/" className="flex items-center space-x-2">
-            {showBranding && (
-              <>
-                <CoffeeIcon className="w-8 h-8 text-primary" />
-                <span className="text-xl font-bold text-white font-serif">Bear&Bean</span>
-              </>
-            )}
-          </Link>
+          {/* Clean navigation without branding */}
+          <div className="flex items-center">
+            {/* Empty space for balance */}
+          </div>
 
           {/* Desktop Nav */}
           <div className="hidden md:flex md:items-center md:space-x-8">
@@ -40,12 +32,6 @@ const Navbar: React.FC = () => {
             </NavLink>
             <NavLink to="/menu" className={({isActive}) => isActive ? 'nav-link active' : 'nav-link'}>
               Menu
-            </NavLink>
-            <NavLink to="/about" className={({isActive}) => isActive ? 'nav-link active' : 'nav-link'}>
-              About
-            </NavLink>
-            <NavLink to="/contact" className={({isActive}) => isActive ? 'nav-link active' : 'nav-link'}>
-              Contact
             </NavLink>
           </div>
 

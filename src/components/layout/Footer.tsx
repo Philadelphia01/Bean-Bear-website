@@ -33,19 +33,7 @@ const Footer: React.FC = () => {
             <ul className="space-y-2">
               <li><Link to="/" className="text-gray-400 hover:text-primary transition-colors">Home</Link></li>
               <li><Link to="/menu" className="text-gray-400 hover:text-primary transition-colors">Menu</Link></li>
-              <li><Link to="/about" className="text-gray-400 hover:text-primary transition-colors">About Us</Link></li>
-              <li><Link to="/contact" className="text-gray-400 hover:text-primary transition-colors">Contact</Link></li>
             </ul>
-          </div>
-          
-          <div>
-            <h3 className="text-lg font-bold mb-4">Contact Us</h3>
-            <address className="not-italic text-gray-400">
-              <p>123 Coffee Street</p>
-              <p>Cape Town, South Africa</p>
-              <p className="mt-2">+27 21 123 4567</p>
-              <p className="mt-2">info@coffeeemporium.co.za</p>
-            </address>
           </div>
           
           <div>

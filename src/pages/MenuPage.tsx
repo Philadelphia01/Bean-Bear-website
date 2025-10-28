@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { menuItems } from '../data/menuItems';
-import { useCart } from '../contexts/CartContext';
-import { Plus } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { Plus, ChevronLeft } from 'lucide-react';
 
 const MenuPage: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<string>('all');
-  const { addToCart } = useCart();
+  const navigate = useNavigate();
   
   const categories = [
     { id: 'all', name: 'All' },
@@ -21,19 +20,34 @@ const MenuPage: React.FC = () => {
     : menuItems.filter(item => item.category === activeCategory);
 
   const handleAddToCart = (item: any) => {
-    addToCart(item);
-    toast.success(`Added ${item.title} to cart`);
+    navigate(`/item/${item.id}`);
   };
 
   return (
-    <div className="pt-20 pb-16">
-      <section className="py-12 bg-dark-light">
-        <div className="container">
-          <h1 className="text-4xl font-bold text-center mb-4 font-serif">Our Menu</h1>
-          <p className="text-center text-gray-400 max-w-3xl mx-auto mb-10">
+    <div className="pt-4 pb-16 min-h-screen bg-dark">
+      {/* Header Outside Container */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between px-4">
+          <button
+            onClick={() => window.history.back()}
+            className="flex items-center p-2 rounded-xl transition-all duration-200"
+            style={{ color: '#D4A76A' }}
+          >
+            <ChevronLeft className="w-8 h-8" />
+          </button>
+        </div>
+        <div className="text-center mt-4">
+          <h1 className="text-title font-serif text-white">Our Menu</h1>
+          <p className="text-caption text-gray-400 mt-2">
             Indulge in our carefully crafted selection of breakfast dishes, pastries,
             and beverages.
           </p>
+        </div>
+      </div>
+
+      <div className="container">
+        <section className="py-8">
+          <div className="max-w-6xl mx-auto">
 
           {/* Category Tabs */}
           <div className="flex flex-wrap justify-center gap-2 mb-12">
@@ -41,7 +55,11 @@ const MenuPage: React.FC = () => {
               <button
                 key={category.id}
                 onClick={() => setActiveCategory(category.id)}
-                className={`tab ${activeCategory === category.id ? 'active' : ''}`}
+                className={`px-4 py-2 rounded-full transition-colors ${
+                  activeCategory === category.id
+                    ? 'bg-primary text-dark font-medium'
+                    : 'bg-dark-light text-gray-300 hover:bg-primary/20'
+                }`}
               >
                 {category.name}
               </button>
@@ -49,40 +67,46 @@ const MenuPage: React.FC = () => {
           </div>
 
           {/* Menu Items */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredItems.map(item => (
-              <div key={item.id} className="menu-item group">
+              <div key={item.id} className="bg-dark-light rounded-xl p-4 group hover:bg-dark-light/80 transition-colors">
                 <div className="relative mb-4 overflow-hidden rounded-lg">
-                  <img 
-                    src={item.image} 
-                    alt={item.title} 
-                    className="w-full h-56 object-cover transition-transform duration-500 group-hover:scale-110"
+                  <img
+                    src={item.image}
+                    alt={item.title}
+                    className="w-full h-40 object-cover transition-transform duration-300 group-hover:scale-105"
+                    loading="lazy"
+                    onError={(e) => {
+                      console.error('Failed to load image:', item.image, item.title);
+                      (e.target as HTMLImageElement).src = '/images/donuts.png'; // fallback
+                    }}
                   />
                 </div>
                 <div className="flex-grow">
                   <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-xl font-bold">{item.title}</h3>
-                    <span className="text-primary font-bold">R {item.price}</span>
+                    <h3 className="text-body font-semibold text-white flex-1 mr-2">{item.title}</h3>
+                    <span className="text-primary font-bold text-lg">R {item.price}</span>
                   </div>
-                  <p className="text-gray-400 mb-4">{item.description}</p>
+                  <p className="text-caption text-gray-400 mb-4 line-clamp-2">{item.description}</p>
                   {item.allergens && item.allergens.length > 0 && (
-                    <p className="text-sm text-gray-500 mb-4">
+                    <p className="text-small mb-4" style={{ color: '#D4A76A' }}>
                       Contains: {item.allergens.join(', ')}
                     </p>
                   )}
                 </div>
-                <button 
+                <button
                   onClick={() => handleAddToCart(item)}
-                  className="flex items-center justify-center w-full p-2 mt-2 bg-primary text-dark rounded transition-colors hover:bg-primary-dark"
+                  className="w-full py-3 bg-primary text-dark rounded-lg hover:bg-primary-dark transition-colors flex items-center justify-center font-medium"
                 >
                   <Plus className="w-4 h-4 mr-2" />
-                  Add to Order
+                  <span className="text-body font-medium">Add to Cart</span>
                 </button>
               </div>
             ))}
           </div>
         </div>
       </section>
+      </div>
     </div>
   );
 };

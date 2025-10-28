@@ -2,15 +2,18 @@ import { Routes, Route } from 'react-router-dom';
 import Layout from './components/layout/Layout';
 import HomePage from './pages/HomePage';
 import MenuPage from './pages/MenuPage';
-import AboutPage from './pages/AboutPage';
-import ContactPage from './pages/ContactPage';
 import OrderPage from './pages/OrderPage';
 import CheckoutPage from './pages/CheckoutPage';
 import OrderHistoryPage from './pages/OrderHistoryPage';
 import ProfilePage from './pages/ProfilePage';
 import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
 import CustomerLoginPage from './pages/CustomerLoginPage';
+import RegisterPage from './pages/RegisterPage';
+import FoodItemDetail from './pages/FoodItemDetail';
+import AddCardPage from './pages/AddCardPage';
+import PaymentMethodsPage from './pages/PaymentMethodsPage';
+import AddressesPage from './pages/AddressesPage';
+import NewAddressPage from './pages/NewAddressPage';
 import AdminLayout from './components/admin/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminOrders from './pages/admin/AdminOrders';
@@ -25,13 +28,18 @@ function App() {
       <Route path="/" element={<Layout />}>
         <Route index element={<HomePage />} />
         <Route path="menu" element={<MenuPage />} />
-        <Route path="about" element={<AboutPage />} />
-        <Route path="contact" element={<ContactPage />} />
+        <Route path="item/:id" element={<FoodItemDetail />} />
         <Route path="order" element={<OrderPage />} />
         <Route path="checkout" element={<CheckoutPage />} />
         <Route path="order-history" element={<OrderHistoryPage />} />
         <Route path="profile" element={<ProfilePage />} />
       </Route>
+
+      {/* Payment and delivery routes - full screen without layout */}
+      <Route path="payment-methods" element={<PaymentMethodsPage />} />
+      <Route path="add-card" element={<AddCardPage />} />
+      <Route path="addresses" element={<AddressesPage />} />
+      <Route path="new-address" element={<NewAddressPage />} />
 
       <Route path="/login" element={<CustomerLoginPage />} />
       <Route path="/admin-login" element={<LoginPage />} />

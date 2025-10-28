@@ -58,21 +58,21 @@ const RegisterPage: React.FC = () => {
         <div className="text-center mb-8">
           <Link to="/" className="inline-block">
             <CoffeeIcon className="w-12 h-12 text-primary mx-auto mb-2" />
-            <h1 className="text-2xl font-bold font-serif">Bear&Bean</h1>
+            <h1 className="text-title font-serif">Bear&Bean</h1>
+            <p className="text-caption text-gray-400 mt-2">Create Your Account</p>
           </Link>
-          <p className="text-gray-400 mt-2">Create Your Account</p>
         </div>
 
         {error && (
           <div className="mb-6 p-4 bg-red-500/10 border border-red-500 rounded-lg flex items-center">
             <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
-            <p className="text-red-500 text-sm">{error}</p>
+            <p className="text-red-500 text-caption">{error}</p>
           </div>
         )}
 
         <form onSubmit={handleSubmit}>
           <div className="mb-6">
-            <label htmlFor="name" className="block mb-2 font-medium">Full Name</label>
+            <label htmlFor="name" className="block mb-2 text-caption font-medium">Full Name</label>
             <input
               type="text"
               id="name"
@@ -86,7 +86,7 @@ const RegisterPage: React.FC = () => {
           </div>
 
           <div className="mb-6">
-            <label htmlFor="email" className="block mb-2 font-medium">Email</label>
+            <label htmlFor="email" className="block mb-2 text-caption font-medium">Email</label>
             <input
               type="email"
               id="email"
@@ -100,7 +100,7 @@ const RegisterPage: React.FC = () => {
           </div>
 
           <div className="mb-6">
-            <label htmlFor="password" className="block mb-2 font-medium">Password</label>
+            <label htmlFor="password" className="block mb-2 text-caption font-medium">Password</label>
             <input
               type="password"
               id="password"
@@ -114,7 +114,7 @@ const RegisterPage: React.FC = () => {
           </div>
 
           <div className="mb-6">
-            <label htmlFor="confirmPassword" className="block mb-2 font-medium">Confirm Password</label>
+            <label htmlFor="confirmPassword" className="block mb-2 text-caption font-medium">Confirm Password</label>
             <input
               type="password"
               id="confirmPassword"
@@ -144,7 +144,7 @@ const RegisterPage: React.FC = () => {
         </form>
 
         <div className="mt-6 text-center">
-          <p className="text-gray-400">
+          <p className="text-caption text-gray-400">
             Already have an account?{' '}
             <Link to="/login" className="text-primary hover:underline">
               Sign In

@@ -33,7 +33,7 @@ const ContactPage: React.FC = () => {
   };
 
   return (
-    <div className="pt-20 pb-16">
+    <div className="pt-4 pb-16">
       {/* Hero Section */}
       <section className="py-16 bg-dark-light">
         <div className="container">

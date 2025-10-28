@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Package, Clock, CheckCircle, XCircle, Truck, MapPin, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Package, Clock, CheckCircle, XCircle, Truck, MapPin } from 'lucide-react';
 import OrderTrackingTimeline from '../components/OrderTrackingTimeline';
-import DeliveryMap from '../components/DeliveryMap';
 
 type OrderStatus = 'pending' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
 
@@ -43,19 +42,20 @@ const OrderHistoryPage: React.FC = () => {
   };
 
   return (
-    <div className="pt-20 pb-16 min-h-screen bg-dark">
+    <div className="pt-4 pb-16 min-h-screen bg-dark">
       <div className="container">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="flex items-center mb-8">
             <button
               onClick={() => navigate('/')}
-              className="flex items-center text-primary hover:text-primary-dark transition-colors mr-4"
+              className="flex items-center p-2 rounded-xl transition-all duration-200 mr-4"
+              style={{ color: '#D4A76A' }}
             >
               <ArrowLeft className="w-5 h-5 mr-2" />
               Back to Home
             </button>
-            <h1 className="text-3xl font-bold text-white">Order History</h1>
+            <h1 className="text-title text-white">Order History</h1>
           </div>
 
           {/* Orders List */}

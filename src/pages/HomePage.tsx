@@ -1,26 +1,67 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import {
   ShoppingCart,
   User,
   Search,
-  Coffee,
   Plus,
   Star,
   LogOut,
   Settings
 } from 'lucide-react';
-import toast from 'react-hot-toast';
 import { menuItems } from '../data/menuItems';
 
 const HomePage: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState('All');
-  const { addToCart, cartItems } = useCart();
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const { cartItems } = useCart();
   const { user, logout, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
 
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+
+  // Slideshow data
+  const slides = [
+    {
+      id: 1,
+      title: '20% Off On All Espresso!',
+      subtitle: 'Today Only! Limited Offer.',
+      image: '/images/slide.png',
+      itemId: 'hot-1', // Espresso
+      link: '/menu'
+    },
+    {
+      id: 2,
+      title: 'Free Donut with Every Large Coffee!',
+      subtitle: 'Sweeten your morning with a perfect combo.',
+      image: '/images/donuts.png',
+      itemId: 'pastry-3', // Blueberry Muffin as donut alternative
+      link: '/menu'
+    },
+    {
+      id: 3,
+      title: 'New! Caramel Bliss Latte',
+      subtitle: 'Try It Today! A smooth, sweet twist on your favorite brew.',
+      image: '/images/latte%20sale.png',
+      itemId: 'cold-7', // Caramel Mocha as latte alternative
+      link: '/menu'
+    }
+  ];
+
+  // Auto-rotate slides
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
+    }, 4000); // Change slide every 4 seconds
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const goToSlide = (index: number) => {
+    setCurrentSlide(index);
+  };
 
   // Get unique categories from menu items
   const categories = ['All', ...Array.from(new Set(menuItems.map(item => item.category)))];
@@ -28,31 +69,31 @@ const HomePage: React.FC = () => {
   // Get all products or filtered products
   const getFilteredProducts = () => {
     if (activeCategory === 'All') {
-      return menuItems; // Show all menu items when "All" is selected
+      return menuItems.slice(0, 4); // Show only first 4 menu items when "All" is selected
     }
-    return menuItems.filter(product => product.category === activeCategory);
+    return menuItems.filter(product => product.category === activeCategory).slice(0, 4); // Show only first 4 items for specific category
   };
 
   const filteredProducts = getFilteredProducts();
 
   const handleLogout = () => {
     logout();
-    toast.success('Logged out successfully');
   };
 
   const handleAddToCart = (product: any) => {
-    addToCart(product);
-    toast.success(`${product.title} added to cart!`);
+    navigate(`/item/${product.id}`);
   };
 
   return (
     <div className="min-h-screen bg-dark">
       {/* Header with Greeting and Profile */}
-      <div className="bg-dark-light pt-12 pb-6 px-6">
+      <div className="pt-12 pb-6 px-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <p className="text-primary text-sm font-medium">Good Morning</p>
-            <h1 className="text-white text-xl font-bold">John Smith</h1>
+            <p className="text-primary text-caption font-medium">Good Morning</p>
+            <h1 className="text-white text-subtitle font-bold">
+              {isAuthenticated ? (user?.name || 'Guest') : 'Guest'}
+            </h1>
           </div>
           <div className="flex items-center space-x-3">
             {/* Cart Icon */}
@@ -133,29 +174,95 @@ const HomePage: React.FC = () => {
         </div>
       </div>
 
-      {/* Promo Banner with Background */}
-      <div
-        className="mx-6 mb-6 rounded-2xl p-6 flex items-center bg-cover bg-center"
-        style={{
-          backgroundImage: "url('https://images.pexels.com/photos/585750/pexels-photo-585750.jpeg?auto=compress&cs=tinysrgb&w=800')",
-        }}
-      >
-        <div className="backdrop-blur-sm bg-dark/50 rounded-xl p-4 flex items-center w-full">
-          <div className="flex-1">
-            <h3 className="text-white text-lg font-bold mb-1">Buy 2 Coffee and</h3>
-            <p className="text-primary text-sm">Treat Friends</p>
-          </div>
-          <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center">
-            <Coffee className="w-8 h-8 text-primary" />
-          </div>
+      {/* Promotional Slideshow */}
+      <div className="relative mx-6 mb-6 rounded-2xl overflow-hidden">
+        <div className="relative h-48">
+          {slides.map((slide, index) => (
+            <div
+              key={slide.id}
+              className={`absolute inset-0 transition-opacity duration-500 ${
+                index === currentSlide ? 'opacity-100' : 'opacity-0'
+              }`}
+            >
+              {/* Coffee gradient background - same as single banner */}
+              <div className="absolute inset-0 bg-gradient-to-br from-amber-900 via-orange-900 to-black backdrop-blur-md"></div>
+
+              {/* Background blur overlay - same as single banner */}
+              <div className="absolute inset-0 bg-black/30 backdrop-blur-md"></div>
+
+              {/* Coffee beans pattern overlay - same as single banner */}
+              <div className="absolute inset-0 opacity-20">
+                <div className="absolute top-4 left-4 w-8 h-8 rounded-full bg-amber-700"></div>
+                <div className="absolute top-12 right-8 w-6 h-6 rounded-full bg-orange-800"></div>
+                <div className="absolute bottom-8 left-12 w-10 h-10 rounded-full bg-amber-600"></div>
+                <div className="absolute bottom-4 right-4 w-4 h-4 rounded-full bg-orange-700"></div>
+                <div className="absolute top-8 left-20 w-5 h-5 rounded-full bg-amber-800"></div>
+                <div className="absolute bottom-12 right-12 w-7 h-7 rounded-full bg-orange-600"></div>
+              </div>
+
+              {/* Coffee splash effect - same as single banner */}
+              <div className="absolute top-0 right-0 w-32 h-32 opacity-30">
+                <div className="absolute top-2 right-2 w-16 h-16 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 blur-sm"></div>
+                <div className="absolute top-6 right-6 w-8 h-8 rounded-full bg-orange-400 blur-sm"></div>
+              </div>
+
+              {/* Content - optimized layout for compact slideshow */}
+              <div className="relative z-10 h-full flex items-center p-3">
+                <div className="flex items-center justify-between w-full gap-2">
+                  <div className="flex-1 min-w-0">
+                    <h2 className="text-body font-bold text-white mb-1 font-serif leading-tight">
+                      {slide.title}
+                    </h2>
+                    <p className="text-caption text-orange-300 mb-2 leading-relaxed">
+                      {slide.subtitle}
+                    </p>
+                    <Link
+                      to={`/item/${slide.itemId}`}
+                      className="inline-block bg-orange-500 hover:bg-orange-600 text-white font-bold py-1 px-4 rounded-full transition-colors duration-300 shadow-lg hover:shadow-xl text-xs"
+                    >
+                      Order Now
+                    </Link>
+                  </div>
+
+                  {/* Coffee cup image - specific sizes for each slide */}
+                  <div className="flex-shrink-0">
+                    <img
+                      src={slide.image}
+                      alt="Coffee Cup"
+                      className={`object-contain drop-shadow-2xl ${
+                        slide.id === 3 ? 'w-40 h-40' : 'w-32 h-32'
+                      }`}
+                      onError={(e) => {
+                        console.error('Failed to load slide image:', slide.image, slide.title);
+                        (e.target as HTMLImageElement).src = '/images/donuts.png'; // fallback
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Navigation Dots - same style as before */}
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20 flex space-x-2">
+          {slides.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => goToSlide(index)}
+              className={`w-2 h-2 rounded-full transition-colors ${
+                index === currentSlide ? 'bg-primary' : 'bg-white/50'
+              }`}
+            />
+          ))}
         </div>
       </div>
 
       {/* Categories */}
       <div className="px-6 mb-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-white text-lg font-bold">Category</h2>
-          <Link to="/menu" className="text-primary text-sm hover:underline">
+          <h2 className="text-subtitle text-white">Category</h2>
+          <Link to="/menu" className="text-primary text-caption hover:underline">
             View all
           </Link>
         </div>
@@ -189,7 +296,11 @@ const HomePage: React.FC = () => {
                 <img
                   src={product.image}
                   alt={product.title}
-                  className="w-full h-32 object-cover rounded-xl"
+                  className="w-full h-40 object-cover rounded-xl"
+                  onError={(e) => {
+                    console.error('Failed to load product image:', product.image, product.title);
+                    (e.target as HTMLImageElement).src = '/images/donuts.png'; // fallback
+                  }}
                 />
                 <div className="absolute top-2 right-2 bg-primary/90 rounded-full p-1">
                   <Star className="w-4 h-4 text-dark fill-current" />
@@ -197,10 +308,10 @@ const HomePage: React.FC = () => {
               </div>
 
               <div className="flex-grow">
-                <h3 className="text-white font-bold text-sm mb-1 line-clamp-2">{product.title}</h3>
+                <h3 className="text-body font-semibold text-white mb-1 line-clamp-2">{product.title}</h3>
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-primary font-bold">R {product.price}</span>
-                  <span className="text-xs text-primary bg-primary/20 px-2 py-1 rounded-full">
+                  <span className="text-small text-primary bg-primary/20 px-2 py-1 rounded-full">
                     4.5 ★
                   </span>
                 </div>
@@ -208,7 +319,7 @@ const HomePage: React.FC = () => {
 
               <button
                 onClick={() => handleAddToCart(product)}
-                className="w-full bg-primary text-dark py-2 rounded-full text-sm font-medium hover:bg-primary-dark transition-colors flex items-center justify-center mt-auto"
+                className="w-full bg-primary text-dark py-2 rounded-full text-caption font-medium hover:bg-primary-dark transition-colors flex items-center justify-center mt-auto"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Add to Cart

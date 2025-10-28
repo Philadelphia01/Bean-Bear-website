@@ -17,11 +17,20 @@ export type CartItem = {
   quantity: number;
   category: string;
   image: string;
+  customizations?: {
+    size?: string;
+    sugar?: string;
+    ice?: string;
+    milk?: string;
+    addons?: string[];
+    specialInstructions?: string;
+  };
 };
 
 type CartContextType = {
   cartItems: CartItem[];
   addToCart: (item: MenuItem) => void;
+  addToCartWithCustomizations: (item: MenuItem, customizations: CartItem['customizations'], quantity?: number) => void;
   removeFromCart: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
@@ -45,7 +54,35 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Update localStorage and total whenever cart changes
   useEffect(() => {
     localStorage.setItem('cart', JSON.stringify(cartItems));
-    const newTotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const newTotal = cartItems.reduce((sum, item) => {
+      let basePrice = item.price;
+
+      // Add price for size upgrades
+      if (item.customizations?.size === 'Large') {
+        if (item.category?.includes('beverages')) {
+          basePrice += 10; // Large drinks cost more
+        } else {
+          basePrice += 15; // Large food items cost more
+        }
+      }
+
+      // Add price for milk alternatives
+      if (item.customizations?.milk && item.customizations.milk !== 'Regular Milk') {
+        basePrice += 5;
+      }
+
+      // Add price for addons
+      if (item.customizations?.addons) {
+        item.customizations.addons.forEach((addon: string) => {
+          const priceMatch = addon.match(/\(\+R(\d+)\)/);
+          if (priceMatch) {
+            basePrice += parseInt(priceMatch[1]);
+          }
+        });
+      }
+
+      return sum + (basePrice * item.quantity);
+    }, 0);
     setTotal(newTotal);
   }, [cartItems]);
 
@@ -69,6 +106,36 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
           quantity: 1,
           category: item.category,
           image: item.image
+        }];
+      }
+    });
+  };
+
+  const addToCartWithCustomizations = (item: MenuItem, customizations: CartItem['customizations'], quantity: number = 1) => {
+    setCartItems(prevItems => {
+      const existingItem = prevItems.find(cartItem =>
+        cartItem.id === item.id &&
+        JSON.stringify(cartItem.customizations) === JSON.stringify(customizations)
+      );
+
+      if (existingItem) {
+        // If item with same customizations exists, increment quantity
+        return prevItems.map(cartItem =>
+          cartItem.id === item.id &&
+          JSON.stringify(cartItem.customizations) === JSON.stringify(customizations)
+            ? { ...cartItem, quantity: cartItem.quantity + quantity }
+            : cartItem
+        );
+      } else {
+        // Otherwise add new item with customizations
+        return [...prevItems, {
+          id: item.id,
+          title: item.title,
+          price: item.price,
+          quantity,
+          category: item.category,
+          image: item.image,
+          customizations
         }];
       }
     });
@@ -99,6 +166,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <CartContext.Provider value={{
       cartItems,
       addToCart,
+      addToCartWithCustomizations,
       removeFromCart,
       updateQuantity,
       clearCart,

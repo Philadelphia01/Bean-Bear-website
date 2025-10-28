@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, User, Shield, HelpCircle, Phone, MapPin, Star, Edit, Award } from 'lucide-react';
+import { ArrowLeft, User, Shield, HelpCircle, Star, Edit, Award } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const ProfilePage: React.FC = () => {
@@ -29,12 +29,6 @@ const ProfilePage: React.FC = () => {
       title: 'Help & Support',
       icon: HelpCircle,
       description: 'Get help and support'
-    },
-    {
-      id: 'contact',
-      title: 'Contact Us',
-      icon: Phone,
-      description: 'Get in touch with our team'
     },
     {
       id: 'loyalty',
@@ -162,68 +156,6 @@ const ProfilePage: React.FC = () => {
           </div>
         );
 
-      case 'contact':
-        return (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-white mb-6">Contact Us</h2>
-            <div className="bg-dark-light rounded-lg p-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                    <MapPin className="w-5 h-5 mr-2 text-primary" />
-                    Visit Us
-                  </h3>
-                  <div className="space-y-2 text-gray-300">
-                    <p><strong>Bear & Bean Coffee Shop</strong></p>
-                    <p>123 Coffee Street</p>
-                    <p>Cape Town, 8001</p>
-                    <p>South Africa</p>
-                  </div>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                    <Phone className="w-5 h-5 mr-2 text-primary" />
-                    Get In Touch
-                  </h3>
-                  <div className="space-y-2 text-gray-300">
-                    <p><strong>Phone:</strong> +27 21 123 4567</p>
-                    <p><strong>Email:</strong> info@bearbean.coffee</p>
-                    <p><strong>Hours:</strong> Mon-Sun: 7:00 AM - 11:00 PM</p>
-                  </div>
-                </div>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-white mb-3">Send us a Message</h3>
-                <form className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <input
-                      type="text"
-                      placeholder="Your Name"
-                      className="w-full px-3 py-2 bg-dark border border-primary/20 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                    <input
-                      type="email"
-                      placeholder="Your Email"
-                      className="w-full px-3 py-2 bg-dark border border-primary/20 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                  </div>
-                  <textarea
-                    rows={4}
-                    placeholder="Your Message"
-                    className="w-full px-3 py-2 bg-dark border border-primary/20 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary"
-                  ></textarea>
-                  <button
-                    type="submit"
-                    className="bg-primary text-dark px-6 py-3 rounded-lg hover:bg-primary-dark transition-colors"
-                  >
-                    Send Message
-                  </button>
-                </form>
-              </div>
-            </div>
-          </div>
-        );
-
       case 'loyalty':
         return (
           <div className="space-y-6">
@@ -282,7 +214,7 @@ const ProfilePage: React.FC = () => {
   };
 
   return (
-    <div className="pt-20 pb-16 min-h-screen bg-dark">
+    <div className="pt-4 pb-16 min-h-screen bg-dark">
       <div className="container">
         <div className="max-w-4xl mx-auto">
           {/* Header */}

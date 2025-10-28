@@ -103,11 +103,11 @@ const CustomerLoginPage: React.FC = () => {
         <div className="text-center mb-8">
           <Link to="/" className="inline-block">
             <CoffeeIcon className="w-12 h-12 text-primary mx-auto mb-2" />
-            <h1 className="text-2xl font-bold font-serif">Bear&Bean</h1>
+            <h1 className="text-title font-serif">Bear&Bean</h1>
+            <p className="text-caption text-gray-400 mt-2">
+              {isLogin ? 'Welcome back!' : 'Join our coffee community'}
+            </p>
           </Link>
-          <p className="text-gray-400 mt-2">
-            {isLogin ? 'Welcome back!' : 'Join our coffee community'}
-          </p>
         </div>
 
         {error && (
@@ -120,7 +120,7 @@ const CustomerLoginPage: React.FC = () => {
         <form onSubmit={isLogin ? handleLogin : handleRegister}>
           {!isLogin && (
             <div className="mb-4">
-              <label htmlFor="name" className="block mb-2 font-medium">Full Name *</label>
+              <label htmlFor="name" className="block mb-2 text-caption font-medium">Full Name *</label>
               <input
                 type="text"
                 id="name"
@@ -135,7 +135,7 @@ const CustomerLoginPage: React.FC = () => {
           )}
 
           <div className="mb-4">
-            <label htmlFor="email" className="block mb-2 font-medium">Email *</label>
+            <label htmlFor="email" className="block mb-2 text-caption font-medium">Email *</label>
             <input
               type="email"
               id="email"
@@ -149,7 +149,7 @@ const CustomerLoginPage: React.FC = () => {
           </div>
 
           <div className="mb-4">
-            <label htmlFor="password" className="block mb-2 font-medium">Password *</label>
+            <label htmlFor="password" className="block mb-2 text-caption font-medium">Password *</label>
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
@@ -174,7 +174,7 @@ const CustomerLoginPage: React.FC = () => {
           {!isLogin && (
             <>
               <div className="mb-4">
-                <label htmlFor="phone" className="block mb-2 font-medium">Phone Number</label>
+                <label htmlFor="phone" className="block mb-2 text-caption font-medium">Phone Number</label>
                 <input
                   type="tel"
                   id="phone"
@@ -187,7 +187,7 @@ const CustomerLoginPage: React.FC = () => {
               </div>
 
               <div className="mb-6">
-                <label htmlFor="address" className="block mb-2 font-medium">Delivery Address</label>
+                <label htmlFor="address" className="block mb-2 text-caption font-medium">Delivery Address</label>
                 <input
                   type="text"
                   id="address"
@@ -220,7 +220,7 @@ const CustomerLoginPage: React.FC = () => {
         </form>
 
         <div className="mt-6 text-center">
-          <p className="text-gray-400">
+          <p className="text-caption text-gray-400">
             {isLogin ? "Don't have an account?" : "Already have an account?"}{' '}
             <button
               onClick={() => setIsLogin(!isLogin)}
@@ -233,14 +233,14 @@ const CustomerLoginPage: React.FC = () => {
 
         {isLogin && (
           <div className="mt-4 p-3 bg-primary/10 rounded-lg">
-            <p className="text-sm text-primary text-center">
+            <p className="text-caption text-primary text-center">
               Demo: Use any email/password combination to login
             </p>
           </div>
         )}
 
         <div className="mt-4 text-center">
-          <Link to="/" className="text-primary hover:underline">
+          <Link to="/" className="text-primary text-caption hover:underline">
             Return to Home
           </Link>
         </div>
