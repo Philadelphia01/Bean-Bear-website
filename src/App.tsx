@@ -5,6 +5,7 @@ import MenuPage from './pages/MenuPage';
 import OrderPage from './pages/OrderPage';
 import CheckoutPage from './pages/CheckoutPage';
 import OrderHistoryPage from './pages/OrderHistoryPage';
+import OrderTrackingPage from './pages/OrderTrackingPage';
 import ProfilePage from './pages/ProfilePage';
 import LoginPage from './pages/LoginPage';
 import CustomerLoginPage from './pages/CustomerLoginPage';
@@ -40,6 +41,7 @@ function App() {
       <Route path="add-card" element={<AddCardPage />} />
       <Route path="addresses" element={<AddressesPage />} />
       <Route path="new-address" element={<NewAddressPage />} />
+      <Route path="order-tracking" element={<OrderTrackingPage />} />
 
       <Route path="/login" element={<CustomerLoginPage />} />
       <Route path="/admin-login" element={<LoginPage />} />

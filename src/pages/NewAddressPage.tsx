@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, MapPin, Navigation, Globe, ArrowRight } from 'lucide-react';
+import { ChevronLeft, MapPin, Navigation, Globe, ArrowRight, MoreVertical } from 'lucide-react';
 import toast from 'react-hot-toast';
 import BottomNav from '../components/BottomNav';
 
@@ -11,7 +11,8 @@ const NewAddressPage: React.FC = () => {
     address: '',
     city: 'Johannesburg',
     postalCode: '',
-    country: 'South Africa'
+    country: 'South Africa',
+    phone: ''
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -27,15 +28,40 @@ const NewAddressPage: React.FC = () => {
   };
 
   const handleUseCurrentLocation = () => {
-    // Simulate getting current location
-    toast.success('Current location detected: Johannesburg, South Africa');
-    setFormData(prev => ({
-      ...prev,
-      address: 'Current Location',
-      city: 'Johannesburg',
-      postalCode: '2000',
-      country: 'South Africa'
-    }));
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          try {
+            const { latitude, longitude } = position.coords;
+            // Use OpenStreetMap Nominatim for reverse geocoding
+            const response = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`
+            );
+            const data = await response.json();
+            
+            setFormData(prev => ({
+              ...prev,
+              address: data.display_name.split(',')[0] || 'Current Location',
+              city: data.address.city || data.address.town || data.address.village || 'Johannesburg',
+              postalCode: data.address.postcode || '',
+              country: data.address.country || 'South Africa'
+            }));
+            
+            toast.success('Current location detected');
+          } catch (error) {
+            console.error('Error getting address from coordinates:', error);
+            toast.error('Could not get address details');
+          }
+        },
+        (error) => {
+          console.error('Error getting location:', error);
+          toast.error('Could not access your location. Please enable location services.');
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    } else {
+      toast.error('Geolocation is not supported by your browser');
+    }
   };
 
   const handleSaveAddress = () => {
@@ -44,7 +70,28 @@ const NewAddressPage: React.FC = () => {
       return;
     }
 
-    // Save address logic here
+    // Get existing addresses from local storage
+    const existingAddresses = JSON.parse(localStorage.getItem('userAddresses') || '[]');
+    
+    // Create new address object
+    const newAddress = {
+      id: Date.now().toString(),
+      title: formData.title,
+      address: formData.address,
+      city: formData.city,
+      postalCode: formData.postalCode,
+      country: formData.country,
+      phone: formData.phone || '',
+      isDefault: existingAddresses.length === 0, // Set as default if it's the first address
+      icon: formData.title.toLowerCase().includes('home') ? 'home' : 
+            formData.title.toLowerCase().includes('office') || formData.title.toLowerCase().includes('work') ? 'office' :
+            'other'
+    };
+
+    // Save to local storage
+    const updatedAddresses = [...existingAddresses, newAddress];
+    localStorage.setItem('userAddresses', JSON.stringify(updatedAddresses));
+    
     toast.success('Address saved successfully!');
     navigate('/addresses');
   };
@@ -54,13 +101,25 @@ const NewAddressPage: React.FC = () => {
       {/* Header */}
       <div className="px-4 py-6" style={{ backgroundColor: '#000000' }}>
         <div className="relative">
-          <button
-            onClick={handleBack}
-            className="absolute left-0 top-0 flex items-center p-2 rounded-xl transition-all duration-200"
-            style={{ color: '#D4A76A' }}
-          >
-            <ChevronLeft className="w-8 h-8" />
-          </button>
+          <div className="absolute left-0 top-0 flex items-center">
+            <button
+              onClick={handleBack}
+              className="p-2 rounded-xl transition-all duration-200"
+              style={{ color: '#D4A76A' }}
+            >
+              <ChevronLeft className="w-8 h-8" />
+            </button>
+          </div>
+          
+          <div className="absolute right-0 top-0 flex items-center">
+            <button
+              className="p-2 rounded-xl transition-all duration-200"
+              style={{ color: '#D4A76A' }}
+              onClick={() => toast('More options')}
+            >
+              <MoreVertical className="w-6 h-6" />
+            </button>
+          </div>
 
           <div className="pt-8 flex items-center justify-center">
             <h1 className="text-title text-white">New Address</h1>

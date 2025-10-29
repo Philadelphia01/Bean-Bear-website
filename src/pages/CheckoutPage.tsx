@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
-import { ChevronLeft, MapPin, ChevronRight, Check } from 'lucide-react';
+import { ChevronLeft, MapPin, ChevronRight, Check, MoreVertical } from 'lucide-react';
+import SuccessPopup from '../components/SuccessPopup';
 import toast from 'react-hot-toast';
 import PaymentIcon from '../components/PaymentIcon';
 
@@ -15,6 +16,7 @@ const CheckoutPage: React.FC = () => {
 
   const [paymentMethod, setPaymentMethod] = useState('card');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
   const [orderType, setOrderType] = useState<'delivery' | 'pickup'>('delivery');
   const [showAddressDetails, setShowAddressDetails] = useState(false);
   const [savedCards, setSavedCards] = useState<any[]>(() => {
@@ -117,18 +119,16 @@ const CheckoutPage: React.FC = () => {
       setLocalOrders(updatedOrders);
       localStorage.setItem('userOrders', JSON.stringify(updatedOrders));
 
-      // Clear the cart
-      clearCart();
-
-      // Show success message
-      toast.success('Order placed successfully! You can track it in your order history.');
-
-      // Navigate to order history page after a short delay
-      setTimeout(() => {
-        navigate('/order-history');
-      }, 2000);
-
+      // Show success popup and reset processing state
       setIsProcessing(false);
+      console.log('🎉 Setting showSuccess to true');
+      setShowSuccess(true);
+      
+      // Clear cart and navigate after popup is shown (5 seconds)
+      setTimeout(() => {
+        clearCart();
+        navigate('/order-history');
+      }, 5500);
     }, 2000);
   };
 
@@ -152,24 +152,44 @@ const CheckoutPage: React.FC = () => {
   }
 
   return (
-    <div className="pt-4 pb-16 min-h-screen bg-dark">
+    <div className="pt-12 pb-16 min-h-screen bg-dark">
+      <SuccessPopup 
+        isVisible={showSuccess}
+        onClose={() => setShowSuccess(false)}
+        onAnimationComplete={() => navigate('/order-history')}
+      />
       <div className="container">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-4xl mx-auto px-4">
           {/* Header */}
-          <div className="flex items-center justify-center mb-6 relative pt-8">
-            <button
-              onClick={() => navigate('/order')}
-              className="absolute left-0 top-0 flex items-center p-2 rounded-xl transition-all duration-200"
-              style={{ color: '#D4A76A' }}
-            >
-              <ChevronLeft className="w-8 h-8" />
-            </button>
-            <h1 className="text-title text-white">Checkout</h1>
+          <div className="relative mb-8">
+            <div className="absolute left-0 top-0">
+              <button
+                onClick={() => navigate('/order')}
+                className="p-2 rounded-xl transition-all duration-200"
+                style={{ color: '#D4A76A' }}
+              >
+                <ChevronLeft className="w-8 h-8" />
+              </button>
+            </div>
+            
+            <div className="text-center pt-8">
+              <h1 className="text-2xl font-bold text-white">Checkout</h1>
+            </div>
+            
+            <div className="absolute right-0 top-0">
+              <button
+                className="p-2 rounded-xl transition-all duration-200"
+                style={{ color: '#D4A76A' }}
+                onClick={() => toast('More options')}
+              >
+                <MoreVertical className="w-6 h-6" />
+              </button>
+            </div>
           </div>
 
           {/* Order Type Toggle */}
-          <div className="flex items-center justify-center mb-8">
-            <div className="bg-dark-light rounded-full p-1 flex">
+          <div className="flex items-center justify-center mb-10">
+            <div className="bg-dark-light rounded-full p-1 flex border border-gray-700">
               <button
                 onClick={() => setOrderType('delivery')}
                 className={`px-8 py-3 rounded-full font-medium transition-colors ${
@@ -196,7 +216,7 @@ const CheckoutPage: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Order Summary */}
             <div className="rounded-lg p-6" style={{ backgroundColor: '#1E1E1E', border: `1px solid #D4A76A40`, borderRadius: '20px' }}>
-              <h2 className="text-subtitle text-white">Order Summary</h2>
+              <h2 className="text-subtitle text-white mb-6">Order Summary</h2>
 
               <div className="space-y-4 mb-6">
                 {cartItems.map(item => (

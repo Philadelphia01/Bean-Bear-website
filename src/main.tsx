@@ -8,7 +8,6 @@ import './index.css';
 import { AuthProvider } from './contexts/AuthContext.tsx';
 import { CartProvider } from './contexts/CartContext.tsx';
 import { Toaster } from 'react-hot-toast';
-import toast from 'react-hot-toast';
 
 function MainApp() {
   const [showSplash, setShowSplash] = useState(true);
@@ -24,18 +23,6 @@ function MainApp() {
     localStorage.removeItem('userOrders');
 
     console.log('🧹 Cart and orders data cleared on page refresh');
-
-    // Show notification after a short delay
-    setTimeout(() => {
-      toast.success('🧹 Cart cleared - Fresh start!', {
-        duration: 3000,
-        style: {
-          background: '#1E1E1E',
-          color: '#F5F5F5',
-          border: '1px solid #2A2A2A'
-        }
-      });
-    }, 1000);
   }, []);
 
   return (
@@ -51,10 +38,25 @@ function MainApp() {
             <Toaster
               position="bottom-right"
               toastOptions={{
+                duration: 3000,
                 style: {
                   background: '#1E1E1E',
                   color: '#F5F5F5',
-                  border: '1px solid #2A2A2A'
+                  border: '1px solid #2A2A2A',
+                  borderRadius: '8px',
+                  padding: '16px'
+                },
+                success: {
+                  iconTheme: {
+                    primary: '#10B981',
+                    secondary: '#FFFFFF'
+                  }
+                },
+                error: {
+                  iconTheme: {
+                    primary: '#EF4444',
+                    secondary: '#FFFFFF'
+                  }
                 }
               }}
             />

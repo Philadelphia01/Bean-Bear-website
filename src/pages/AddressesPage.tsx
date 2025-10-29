@@ -1,41 +1,17 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Search, MoreVertical, MapPin, Phone, Home, Building, Building2 } from 'lucide-react';
+import { ChevronLeft, Search, MoreVertical, MapPin, Home, Building, Building2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import BottomNav from '../components/BottomNav';
 
-// Mock address data with contextual icons
-const mockAddresses = [
-  {
-    id: '1',
-    title: 'Home',
-    address: '123 Oak Avenue, Sandton',
-    city: 'Johannesburg',
-    postalCode: '2196',
-    phone: '+27 81 234 5678',
-    isDefault: true,
-    icon: 'home'
-  },
-  {
-    id: '2',
-    title: 'Office',
-    address: '45 Business Park Drive, Rosebank',
-    city: 'Johannesburg',
-    postalCode: '2196',
-    phone: '+27 81 234 5679',
-    isDefault: false,
-    icon: 'office'
-  },
-  {
-    id: '3',
-    title: 'Mom\'s House',
-    address: '78 Garden Street, Parktown',
-    city: 'Johannesburg',
-    postalCode: '2193',
-    phone: '+27 81 234 5680',
-    isDefault: false,
-    icon: 'house'
+// Get addresses from local storage or use empty array if none exist
+const getAddresses = () => {
+  if (typeof window !== 'undefined') {
+    const savedAddresses = localStorage.getItem('userAddresses');
+    return savedAddresses ? JSON.parse(savedAddresses) : [];
   }
-];
+  return [];
+};
 
 const getAddressIcon = (title: string, iconType: string) => {
   const titleLower = title.toLowerCase();
@@ -54,12 +30,13 @@ const getAddressIcon = (title: string, iconType: string) => {
 const AddressesPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
+  const [addresses, setAddresses] = useState(getAddresses());
 
   const handleBack = () => {
     navigate('/checkout');
   };
 
-  const handleSelectAddress = (address: typeof mockAddresses[0]) => {
+  const handleSelectAddress = (address: any) => {
     navigate('/checkout', {
       state: {
         selectedAddress: {
@@ -73,11 +50,19 @@ const AddressesPage: React.FC = () => {
     });
   };
 
-  const filteredAddresses = mockAddresses.filter(address =>
+  const filteredAddresses = addresses.filter((address: any) =>
     address.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     address.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    address.city.toLowerCase().includes(searchTerm.toLowerCase())
+    (address.city && address.city.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  const handleDeleteAddress = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updatedAddresses = addresses.filter((addr: any) => addr.id !== id);
+    setAddresses(updatedAddresses);
+    localStorage.setItem('userAddresses', JSON.stringify(updatedAddresses));
+    toast.success('Address deleted successfully');
+  };
 
   return (
     <div className="min-h-screen bg-black pb-20">
@@ -120,8 +105,8 @@ const AddressesPage: React.FC = () => {
 
       {/* Address List */}
       <div className="px-4 pb-8">
-        <div className="space-y-4">
-          {filteredAddresses.map((address) => (
+        <div className="mt-6 space-y-4">
+          {filteredAddresses.map((address: any) => (
             <div
               key={address.id}
               onClick={() => handleSelectAddress(address)}
@@ -154,13 +139,24 @@ const AddressesPage: React.FC = () => {
 
                 {/* Address Details */}
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-body font-semibold text-white mb-1">{address.title}</h3>
+                  <div className="flex justify-between items-start">
+                    <h3 className="text-white font-medium">{address.title}</h3>
+                    <div className="flex space-x-2">
+                      {address.isDefault && (
+                        <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full">
+                          Default
+                        </span>
+                      )}
+                      <button 
+                        onClick={(e) => handleDeleteAddress(address.id, e)}
+                        className="text-red-500 text-xs"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
                   <p className="text-caption text-gray-300 mb-1">{address.address}</p>
-                  <p className="text-caption text-gray-300 mb-1">{address.city}, {address.postalCode}</p>
-                  <p className="text-small text-gray-400 flex items-center">
-                    <Phone className="w-3 h-3 mr-1 text-gray-400" />
-                    {address.phone}
-                  </p>
+                  <p className="text-caption text-gray-300">{address.city}, {address.postalCode}</p>
                 </div>
 
                 {/* Menu Button */}
