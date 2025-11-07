@@ -1,6 +1,7 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/layout/Layout';
 import HomePage from './pages/HomePage';
+import SplashScreenFlow from './components/SplashScreenFlow';
 import MenuPage from './pages/MenuPage';
 import OrderPage from './pages/OrderPage';
 import CheckoutPage from './pages/CheckoutPage';
@@ -26,7 +27,8 @@ import NotFoundPage from './pages/NotFoundPage';
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<Layout />}>
+      <Route path="/" element={<SplashScreenFlow />} />
+      <Route path="/home" element={<Layout />}>
         <Route index element={<HomePage />} />
         <Route path="menu" element={<MenuPage />} />
         <Route path="item/:id" element={<FoodItemDetail />} />
@@ -58,7 +60,7 @@ function App() {
         <Route path="users" element={<AdminUsers />} />
       </Route>
 
-      <Route path="*" element={<NotFoundPage />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
