@@ -3,12 +3,11 @@
   publish = "dist"
 
 # SPA redirect - all routes should go to index.html for client-side routing
-# This excludes static assets (files with extensions)
+# This redirects all non-file requests to index.html
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
-  force = false
 
 [[headers]]
   for = "/*"

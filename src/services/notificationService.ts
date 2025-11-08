@@ -2,10 +2,13 @@
 // Note: Requires @capacitor/push-notifications package
 // Install: npm install @capacitor/push-notifications
 
-import { PushNotifications } from '@capacitor/push-notifications';
-import { Capacitor } from '@capacitor/core';
 import { db } from '../firebase/config';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
+
+// Import Capacitor - these are safe to import even on web
+// They just won't work, but won't break the app
+import { Capacitor } from '@capacitor/core';
+import { PushNotifications } from '@capacitor/push-notifications';
 
 export interface NotificationToken {
   token: string;
@@ -19,6 +22,12 @@ class NotificationService {
 
   // Initialize push notifications (only on native platforms)
   async initialize(userId: string): Promise<void> {
+    // Check if Capacitor is available
+    if (!Capacitor || !PushNotifications) {
+      console.log('Push notifications are not available on web platform');
+      return;
+    }
+
     // Check if we're on a native platform (Android/iOS)
     // Push notifications don't work on web
     const platform = Capacitor.getPlatform();
