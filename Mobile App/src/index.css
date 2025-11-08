@@ -1,0 +1,203 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-dark text-light font-sans;
+  overflow-x: hidden;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  @apply font-sans;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  font-weight: 600;
+}
+
+.container {
+  @apply px-4 mx-auto max-w-7xl;
+}
+
+.btn {
+  @apply px-6 py-3 font-medium transition-all duration-300 rounded-md;
+}
+
+.btn-primary {
+  @apply bg-primary text-dark-light hover:bg-primary-dark;
+}
+
+.btn-outline {
+  @apply border border-primary text-primary hover:bg-primary hover:text-dark;
+}
+
+.nav-link {
+  @apply relative px-3 py-2 transition-all duration-300;
+}
+
+.nav-link:after {
+  content: '';
+  @apply absolute bottom-0 left-0 w-0 h-0.5 bg-primary transition-all duration-300;
+}
+
+.nav-link:hover:after, .nav-link.active:after {
+  @apply w-full;
+}
+
+.menu-item {
+  @apply bg-dark-light rounded-xl p-4 transition-all duration-300 hover:bg-dark-light/80 flex flex-col h-full;
+}
+
+.menu-item img {
+  @apply w-full h-40 object-cover rounded-lg transition-transform duration-300;
+}
+
+.menu-item:hover img {
+  @apply scale-105;
+}
+
+.menu-item .menu-content {
+  @apply flex-1 flex flex-col;
+}
+
+.menu-item .menu-title {
+  @apply text-body font-semibold text-white mb-2 line-clamp-2;
+}
+
+.menu-item .menu-price {
+  @apply text-primary font-bold text-lg mb-2;
+}
+
+.menu-item .menu-description {
+  @apply text-caption text-gray-400 mb-4 line-clamp-2 flex-1;
+}
+
+.menu-item .menu-allergens {
+  @apply text-small mb-4;
+}
+
+.menu-item .menu-button {
+  @apply w-full py-3 bg-primary text-dark rounded-lg hover:bg-primary-dark transition-colors flex items-center justify-center font-medium mt-auto;
+}
+
+/* Mobile responsive improvements */
+@media (max-width: 640px) {
+  .menu-item {
+    @apply p-3;
+  }
+
+  .menu-item .menu-title {
+    @apply text-sm font-semibold;
+  }
+
+  .menu-item .menu-price {
+    @apply text-base;
+  }
+
+  .menu-item .menu-description {
+    @apply text-xs mb-3;
+  }
+
+  .menu-item .menu-allergens {
+    @apply text-xs mb-3;
+  }
+
+  .menu-item .menu-button {
+    @apply py-2 text-sm;
+  }
+}
+
+/* Category tabs mobile responsive */
+@media (max-width: 640px) {
+  .category-tabs {
+    @apply flex-wrap gap-1 px-2;
+  }
+
+  .category-tabs button {
+    @apply px-3 py-1.5 text-xs;
+  }
+}
+
+.card {
+  @apply bg-dark-light rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg hover:shadow-primary/10;
+}
+
+.input {
+  @apply w-full px-4 py-3 bg-dark-lighter border border-dark-lighter rounded-md focus:outline-none focus:border-primary text-light;
+}
+
+.tab {
+  @apply px-5 py-2 rounded-full transition-all duration-300 hover:bg-dark-lighter;
+}
+
+.tab.active {
+  @apply bg-primary text-dark;
+}
+
+/* iOS Style Typography */
+.text-display {
+  @apply text-4xl font-bold tracking-tight;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+.text-title {
+  @apply text-2xl font-semibold tracking-tight;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+.text-subtitle {
+  @apply text-lg font-medium tracking-tight;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+.text-body {
+  @apply text-base font-normal leading-relaxed;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+.text-caption {
+  @apply text-sm font-normal leading-relaxed;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+.text-small {
+  @apply text-xs font-normal leading-relaxed;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+/* Animation classes */
+.fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.slide-up {
+  animation: slideUp 0.5s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
