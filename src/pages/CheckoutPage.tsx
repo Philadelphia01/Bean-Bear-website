@@ -135,14 +135,18 @@ const CheckoutPage: React.FC = () => {
     const loadUserData = async () => {
       if (user) {
         try {
-          const [addresses, cards, orders] = await Promise.all([
+          // Load critical data first (addresses and cards), then orders in background
+          const [addresses, cards] = await Promise.all([
             userService.getUserAddresses(user.id),
-            userService.getUserPaymentMethods(user.id),
-            orderService.getOrdersByUser(user.id)
+            userService.getUserPaymentMethods(user.id)
           ]);
           setSavedAddresses(addresses);
           setSavedCards(cards);
-          setUserOrders(orders);
+          
+          // Load orders in background (not critical for checkout)
+          orderService.getOrdersByUser(user.id)
+            .then(orders => setUserOrders(orders))
+            .catch(error => console.error('Error loading orders:', error));
         } catch (error) {
           console.error('Error loading user data:', error);
         }

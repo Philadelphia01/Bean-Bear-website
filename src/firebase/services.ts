@@ -14,11 +14,18 @@ import {
   addDoc,
   serverTimestamp
 } from 'firebase/firestore';
+import { cacheService } from '../utils/cache';
 
 // Menu Services
 export const menuService = {
-  // Get all menu items
+  // Get all menu items (with caching)
   getMenuItems: async () => {
+    const cacheKey = 'menuItems';
+    const cached = cacheService.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     try {
       // Use simple ordering that doesn't require composite index
       const q = query(collection(db, 'menuItems'), orderBy('title'));
@@ -26,12 +33,15 @@ export const menuService = {
       const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
       // Sort by category first, then by title (client-side sorting)
-      return items.sort((a: any, b: any) => {
+      const sortedItems = items.sort((a: any, b: any) => {
         if (a.category !== b.category) {
           return a.category.localeCompare(b.category);
         }
         return a.title.localeCompare(b.title);
       });
+      
+      cacheService.set(cacheKey, sortedItems);
+      return sortedItems;
     } catch (error) {
       console.error('Error getting menu items:', error);
       // Fallback to simple query without ordering if composite index is missing
@@ -40,12 +50,15 @@ export const menuService = {
         const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
         // Sort client-side
-        return items.sort((a: any, b: any) => {
+        const sortedItems = items.sort((a: any, b: any) => {
           if (a.category !== b.category) {
             return a.category.localeCompare(b.category);
           }
           return a.title.localeCompare(b.title);
         });
+        
+        cacheService.set(cacheKey, sortedItems);
+        return sortedItems;
       } catch (fallbackError) {
         console.error('Fallback query also failed:', fallbackError);
         return [];
@@ -81,6 +94,8 @@ export const menuService = {
   // Add new menu item
   addMenuItem: async (item: any) => {
     const docRef = await addDoc(collection(db, 'menuItems'), item);
+    // Invalidate cache when menu is updated
+    cacheService.clear('menuItems');
     return docRef.id;
   },
 
@@ -88,11 +103,15 @@ export const menuService = {
   updateMenuItem: async (id: string, item: any) => {
     const docRef = doc(db, 'menuItems', id);
     await updateDoc(docRef, item);
+    // Invalidate cache when menu is updated
+    cacheService.clear('menuItems');
   },
 
   // Delete menu item
   deleteMenuItem: async (id: string) => {
     await deleteDoc(doc(db, 'menuItems', id));
+    // Invalidate cache when menu is updated
+    cacheService.clear('menuItems');
   }
 };
 

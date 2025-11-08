@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, ChevronLeft, Search, Heart, ShoppingCart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
 import { menuService } from '../firebase/services';
+import OptimizedImage from '../components/OptimizedImage';
 
 const MenuPage: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<string>('all');
@@ -57,12 +58,12 @@ const MenuPage: React.FC = () => {
     { id: 'cold drinks', name: 'Cold Drinks' }
   ];
 
-  const filteredItems = menuItems.filter(item => {
+  const filteredItems = useMemo(() => menuItems.filter(item => {
     const matchesCategory = activeCategory === 'all' || item.category === activeCategory;
     const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          item.description.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
-  });
+  }), [menuItems, activeCategory, searchQuery]);
 
   const handleAddToCart = (item: any) => {
     navigate(`/home/item/${item.id}`);
@@ -169,15 +170,11 @@ const MenuPage: React.FC = () => {
                   
                   {/* Item Image */}
                   <div className="relative mb-3 overflow-hidden rounded-lg aspect-square">
-                    <img
+                    <OptimizedImage
                       src={item.image}
                       alt={item.title}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       loading="lazy"
-                      onError={(e) => {
-                        console.error('Failed to load image:', item.image, item.title);
-                        (e.target as HTMLImageElement).src = '/images/donuts.png'; // fallback
-                      }}
                     />
                   </div>
                   

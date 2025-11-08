@@ -115,22 +115,23 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [user?.id]);
 
-  // Update Firestore whenever cart changes
+  // Update Firestore whenever cart changes (debounced to avoid too many writes)
   useEffect(() => {
-    const updateCart = async () => {
-      if (user?.id && !loading) {
-        try {
-          await cartService.updateUserCart(user.id, {
-            items: cartItems,
-            total
-          });
-        } catch (error) {
-          console.error('Error updating cart:', error);
-        }
-      }
-    };
+    if (!user?.id || loading) return;
 
-    updateCart();
+    // Debounce Firestore updates to avoid excessive writes
+    const timeoutId = setTimeout(async () => {
+      try {
+        await cartService.updateUserCart(user.id, {
+          items: cartItems,
+          total
+        });
+      } catch (error) {
+        console.error('Error updating cart:', error);
+      }
+    }, 1000); // Wait 1 second after last change before updating
+
+    return () => clearTimeout(timeoutId);
   }, [cartItems, total, user?.id, loading]);
 
   const addToCart = (item: MenuItem) => {

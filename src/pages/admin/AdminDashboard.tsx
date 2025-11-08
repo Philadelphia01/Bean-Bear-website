@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { orderService } from '../../firebase/services';
 import { menuService } from '../../firebase/services';
 import {
@@ -120,7 +121,7 @@ const AdminDashboard: React.FC = () => {
         <div className="bg-dark-light p-4 md:p-6 rounded-lg">
           <div className="flex items-center justify-between mb-4 md:mb-6">
             <h2 className="text-lg md:text-xl font-bold">Recent Orders</h2>
-            <a href="/admin/orders" className="text-primary text-xs md:text-sm hover:underline">View All</a>
+            <Link to="/admin/orders" className="text-primary text-xs md:text-sm hover:underline">View All</Link>
           </div>
 
           <div className="space-y-3 md:space-y-4">
@@ -155,7 +156,7 @@ const AdminDashboard: React.FC = () => {
         <div className="bg-dark-light p-4 md:p-6 rounded-lg">
           <div className="flex items-center justify-between mb-4 md:mb-6">
             <h2 className="text-lg md:text-xl font-bold">Popular Items</h2>
-            <a href="/admin/menu" className="text-primary text-xs md:text-sm hover:underline">View Menu</a>
+            <Link to="/admin/menu" className="text-primary text-xs md:text-sm hover:underline">View Menu</Link>
           </div>
 
           <div className="space-y-3 md:space-y-4">
