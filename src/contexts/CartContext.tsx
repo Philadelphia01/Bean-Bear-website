@@ -1,4 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useAuth } from './AuthContext';
+import { cartService } from '../firebase/services';
+import toast from 'react-hot-toast';
 
 export type MenuItem = {
   id: string;
@@ -11,6 +14,7 @@ export type MenuItem = {
 };
 
 export type CartItem = {
+  cartItemId: string;
   id: string;
   title: string;
   price: number;
@@ -31,10 +35,11 @@ type CartContextType = {
   cartItems: CartItem[];
   addToCart: (item: MenuItem) => void;
   addToCartWithCustomizations: (item: MenuItem, customizations: CartItem['customizations'], quantity?: number) => void;
-  removeFromCart: (id: string) => void;
-  updateQuantity: (id: string, quantity: number) => void;
+  removeFromCart: (cartItemId: string) => void;
+  updateQuantity: (cartItemId: string, quantity: number) => void;
   clearCart: () => void;
   total: number;
+  loading: boolean;
 };
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -42,124 +47,192 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [total, setTotal] = useState<number>(0);
+  const [loading, setLoading] = useState<boolean>(true);
+  const { user } = useAuth();
 
-  // Load cart from localStorage on initial render
-  useEffect(() => {
-    const storedCart = localStorage.getItem('cart');
-    if (storedCart) {
-      setCartItems(JSON.parse(storedCart));
+  const createCartItemId = () => {
+    if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+      return crypto.randomUUID();
     }
-  }, []);
+    return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  };
 
-  // Update localStorage and total whenever cart changes
+  const calculateCartItemPrice = (item: CartItem) => {
+    let basePrice = item.price;
+
+    if (item.customizations?.size === 'Large') {
+      if (item.category?.includes('beverages')) {
+        basePrice += 10;
+      } else {
+        basePrice += 15;
+      }
+    }
+
+    if (item.customizations?.milk && item.customizations.milk !== 'Regular Milk') {
+      basePrice += 5;
+    }
+
+    if (item.customizations?.addons) {
+      item.customizations.addons.forEach((addon: string) => {
+        const priceMatch = addon.match(/\(\+R(\d+)\)/);
+        if (priceMatch) {
+          basePrice += parseInt(priceMatch[1]);
+        }
+      });
+    }
+
+    return basePrice;
+  };
+
+  const calculateCartTotal = (items: CartItem[]) => {
+    return items.reduce((sum, cartItem) => sum + calculateCartItemPrice(cartItem) * cartItem.quantity, 0);
+  };
+
+  // Load cart from Firestore when user changes (non-blocking)
   useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(cartItems));
-    const newTotal = cartItems.reduce((sum, item) => {
-      let basePrice = item.price;
+    if (user?.id) {
+      // Don't block - load cart in background
+      setLoading(true);
+      cartService.getUserCart(user.id)
+        .then((cartData) => {
+          const items = (cartData.items || []).map((item: any) => ({
+            ...item,
+            cartItemId: item.cartItemId || createCartItemId()
+          }));
+          setCartItems(items);
+          setTotal(calculateCartTotal(items));
+        })
+        .catch((error) => {
+          console.error('Error loading cart:', error);
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    } else {
+      setCartItems([]);
+      setTotal(0);
+      setLoading(false);
+    }
+  }, [user?.id]);
 
-      // Add price for size upgrades
-      if (item.customizations?.size === 'Large') {
-        if (item.category?.includes('beverages')) {
-          basePrice += 10; // Large drinks cost more
-        } else {
-          basePrice += 15; // Large food items cost more
+  // Update Firestore whenever cart changes
+  useEffect(() => {
+    const updateCart = async () => {
+      if (user?.id && !loading) {
+        try {
+          await cartService.updateUserCart(user.id, {
+            items: cartItems,
+            total
+          });
+        } catch (error) {
+          console.error('Error updating cart:', error);
         }
       }
+    };
 
-      // Add price for milk alternatives
-      if (item.customizations?.milk && item.customizations.milk !== 'Regular Milk') {
-        basePrice += 5;
-      }
-
-      // Add price for addons
-      if (item.customizations?.addons) {
-        item.customizations.addons.forEach((addon: string) => {
-          const priceMatch = addon.match(/\(\+R(\d+)\)/);
-          if (priceMatch) {
-            basePrice += parseInt(priceMatch[1]);
-          }
-        });
-      }
-
-      return sum + (basePrice * item.quantity);
-    }, 0);
-    setTotal(newTotal);
-  }, [cartItems]);
+    updateCart();
+  }, [cartItems, total, user?.id, loading]);
 
   const addToCart = (item: MenuItem) => {
     setCartItems(prevItems => {
-      const existingItem = prevItems.find(cartItem => cartItem.id === item.id);
-      
-      if (existingItem) {
-        // If item exists, increment quantity
-        return prevItems.map(cartItem => 
-          cartItem.id === item.id 
-            ? { ...cartItem, quantity: cartItem.quantity + 1 } 
+      const existingItemIndex = prevItems.findIndex(
+        cartItem => cartItem.id === item.id && !cartItem.customizations
+      );
+
+      let updatedItems: CartItem[];
+
+      if (existingItemIndex !== -1) {
+        updatedItems = prevItems.map((cartItem, index) =>
+          index === existingItemIndex
+            ? { ...cartItem, quantity: cartItem.quantity + 1 }
             : cartItem
         );
+        toast.success(`${item.title} added to cart!`);
       } else {
-        // Otherwise add new item
-        return [...prevItems, { 
-          id: item.id, 
-          title: item.title, 
-          price: item.price, 
-          quantity: 1,
-          category: item.category,
-          image: item.image
-        }];
+        updatedItems = [
+          ...prevItems,
+          {
+            cartItemId: createCartItemId(),
+            id: item.id,
+            title: item.title,
+            price: item.price,
+            quantity: 1,
+            category: item.category,
+            image: item.image
+          }
+        ];
+        toast.success(`${item.title} added to cart!`);
       }
+
+      setTotal(calculateCartTotal(updatedItems));
+      return updatedItems;
     });
   };
 
   const addToCartWithCustomizations = (item: MenuItem, customizations: CartItem['customizations'], quantity: number = 1) => {
     setCartItems(prevItems => {
-      const existingItem = prevItems.find(cartItem =>
+      const existingItemIndex = prevItems.findIndex(cartItem =>
         cartItem.id === item.id &&
         JSON.stringify(cartItem.customizations) === JSON.stringify(customizations)
       );
 
-      if (existingItem) {
-        // If item with same customizations exists, increment quantity
-        return prevItems.map(cartItem =>
-          cartItem.id === item.id &&
-          JSON.stringify(cartItem.customizations) === JSON.stringify(customizations)
+      let updatedItems: CartItem[];
+
+      if (existingItemIndex !== -1) {
+        updatedItems = prevItems.map((cartItem, index) =>
+          index === existingItemIndex
             ? { ...cartItem, quantity: cartItem.quantity + quantity }
             : cartItem
         );
+        toast.success(`${item.title} added to cart!`);
       } else {
-        // Otherwise add new item with customizations
-        return [...prevItems, {
-          id: item.id,
-          title: item.title,
-          price: item.price,
-          quantity,
-          category: item.category,
-          image: item.image,
-          customizations
-        }];
+        updatedItems = [
+          ...prevItems,
+          {
+            cartItemId: createCartItemId(),
+            id: item.id,
+            title: item.title,
+            price: item.price,
+            quantity,
+            category: item.category,
+            image: item.image,
+            customizations
+          }
+        ];
+        toast.success(`${item.title} added to cart!`);
       }
+
+      setTotal(calculateCartTotal(updatedItems));
+      return updatedItems;
     });
   };
 
-  const removeFromCart = (id: string) => {
-    setCartItems(prevItems => prevItems.filter(item => item.id !== id));
+  const removeFromCart = (cartItemId: string) => {
+    setCartItems(prevItems => {
+      const updatedItems = prevItems.filter(item => item.cartItemId !== cartItemId);
+      setTotal(calculateCartTotal(updatedItems));
+      return updatedItems;
+    });
   };
 
-  const updateQuantity = (id: string, quantity: number) => {
+  const updateQuantity = (cartItemId: string, quantity: number) => {
     if (quantity <= 0) {
-      removeFromCart(id);
+      removeFromCart(cartItemId);
       return;
     }
-    
-    setCartItems(prevItems => 
-      prevItems.map(item => 
-        item.id === id ? { ...item, quantity } : item
-      )
-    );
+
+    setCartItems(prevItems => {
+      const updatedItems = prevItems.map(item =>
+        item.cartItemId === cartItemId ? { ...item, quantity } : item
+      );
+      setTotal(calculateCartTotal(updatedItems));
+      return updatedItems;
+    });
   };
 
   const clearCart = () => {
     setCartItems([]);
+    setTotal(0);
   };
 
   return (
@@ -170,7 +243,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       removeFromCart,
       updateQuantity,
       clearCart,
-      total
+      total,
+      loading
     }}>
       {children}
     </CartContext.Provider>

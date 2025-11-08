@@ -7,20 +7,44 @@ import {
   User,
   Search,
   Plus,
-  Star,
+  Heart,
   LogOut,
   Settings
 } from 'lucide-react';
-import { menuItems } from '../data/menuItems';
+import { menuService } from '../firebase/services';
+
+interface CustomizationOption {
+  id: string;
+  name: string;
+  values: string[];
+  selected: string;
+}
 
 const HomePage: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState('All');
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [menuItems, setMenuItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const { cartItems } = useCart();
   const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+
+  useEffect(() => {
+    const loadMenuItems = async () => {
+      try {
+        const items = await menuService.getMenuItems();
+        setMenuItems(items);
+      } catch (error) {
+        console.error('Error loading menu items:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadMenuItems();
+  }, []);
 
   // Slideshow data
   const slides = [
@@ -63,15 +87,27 @@ const HomePage: React.FC = () => {
     setCurrentSlide(index);
   };
 
+  // Remove duplicates from menuItems
+  const uniqueMenuItems = menuItems.filter((item, index, self) =>
+    index === self.findIndex(t => t.id === item.id)
+  );
+
   // Get unique categories from menu items
-  const categories = ['All', ...Array.from(new Set(menuItems.map(item => item.category)))];
+  const categories = ['All', ...Array.from(new Set(uniqueMenuItems.map(item => item.category)))];
 
   // Get all products or filtered products
   const getFilteredProducts = () => {
     if (activeCategory === 'All') {
-      return menuItems.slice(0, 4); // Show only first 4 menu items when "All" is selected
+      // Show 1 item from each category
+      const categoryMap = new Map<string, any>();
+      uniqueMenuItems.forEach(product => {
+        if (!categoryMap.has(product.category)) {
+          categoryMap.set(product.category, product);
+        }
+      });
+      return Array.from(categoryMap.values());
     }
-    return menuItems.filter(product => product.category === activeCategory).slice(0, 4); // Show only first 4 items for specific category
+    return uniqueMenuItems.filter(product => product.category === activeCategory).slice(0, 4); // Show only first 4 items for specific category
   };
 
   const filteredProducts = getFilteredProducts();
@@ -81,7 +117,7 @@ const HomePage: React.FC = () => {
   };
 
   const handleAddToCart = (product: any) => {
-    navigate(`/item/${product.id}`);
+    navigate(`/home/item/${product.id}`);
   };
 
   return (
@@ -90,7 +126,7 @@ const HomePage: React.FC = () => {
       <div className="pt-12 pb-6 px-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <p className="text-primary text-caption font-medium">Good Morning</p>
+            <p className="text-primary text-subtitle font-medium">Hello</p>
             <h1 className="text-white text-subtitle font-bold">
               {isAuthenticated ? (user?.name || 'Guest') : 'Guest'}
             </h1>
@@ -98,7 +134,7 @@ const HomePage: React.FC = () => {
           <div className="flex items-center space-x-3">
             {/* Cart Icon */}
             <Link
-              to="/order"
+              to="/home/order"
               className="relative p-2 text-primary hover:text-primary-dark transition-colors"
               aria-label="Shopping Cart"
             >
@@ -114,7 +150,7 @@ const HomePage: React.FC = () => {
             {isAuthenticated ? (
               <div className="relative group">
                 <Link
-                  to="/profile"
+                  to="/home/profile"
                   className="w-12 h-12 bg-primary rounded-full flex items-center justify-center hover:bg-primary-dark transition-colors"
                   title="View Profile"
                 >
@@ -128,14 +164,14 @@ const HomePage: React.FC = () => {
                       Welcome, {user?.name || 'User'}
                     </div>
                     <Link
-                      to="/profile"
+                      to="/home/profile"
                       className="flex items-center px-3 py-2 text-white hover:bg-primary/10 rounded-md transition-colors"
                     >
                       <Settings className="w-4 h-4 mr-2" />
                       Profile Settings
                     </Link>
                     <Link
-                      to="/order-history"
+                      to="/home/order-history"
                       className="flex items-center px-3 py-2 text-white hover:bg-primary/10 rounded-md transition-colors"
                     >
                       <ShoppingCart className="w-4 h-4 mr-2" />
@@ -217,7 +253,7 @@ const HomePage: React.FC = () => {
                       {slide.subtitle}
                     </p>
                     <Link
-                      to={`/item/${slide.itemId}`}
+                      to={`/home/item/${slide.itemId}`}
                       className="inline-block bg-orange-500 hover:bg-orange-600 text-white font-bold py-1 px-4 rounded-full transition-colors duration-300 shadow-lg hover:shadow-xl text-xs"
                     >
                       Order Now
@@ -262,7 +298,7 @@ const HomePage: React.FC = () => {
       <div className="px-6 mb-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-subtitle text-white">Category</h2>
-          <Link to="/menu" className="text-primary text-caption hover:underline">
+          <Link to="/home/menu" className="text-primary text-caption hover:underline">
             View all
           </Link>
         </div>
@@ -302,8 +338,8 @@ const HomePage: React.FC = () => {
                     (e.target as HTMLImageElement).src = '/images/donuts.png'; // fallback
                   }}
                 />
-                <div className="absolute top-2 right-2 bg-primary/90 rounded-full p-1">
-                  <Star className="w-4 h-4 text-dark fill-current" />
+                <div className="absolute top-2 right-2 bg-black/40 rounded-full p-1">
+                  <Heart className="w-4 h-4 fill-red-500 text-red-500" />
                 </div>
               </div>
 

@@ -1,4 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { auth, db } from '../firebase/config';
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  User as FirebaseUser
+} from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 type User = {
   id: string;
@@ -21,9 +30,11 @@ type CustomerUser = {
 type AuthContextType = {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string, name: string, phone?: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
   hasPermission: (requiredRole: string) => boolean;
+  loading: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -40,75 +51,128 @@ const roleHierarchy: Record<string, number> = {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    // Check if user is logged in from localStorage
-    const storedUser = localStorage.getItem('user');
-    const storedCustomerUser = localStorage.getItem('customerUser');
+    // Listen for authentication state changes
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
+      if (firebaseUser) {
+        // Set basic user info immediately from Firebase Auth (fast)
+        const tempUser: User = {
+          id: firebaseUser.uid,
+          name: firebaseUser.displayName || 'User',
+          email: firebaseUser.email || '',
+          role: 'customer' // Default, will update from Firestore
+        };
+        setUser(tempUser);
+        setIsAuthenticated(true);
+        setLoading(false); // Allow app to render immediately
+        
+        // Load full user profile from Firestore in background (non-blocking)
+        getDoc(doc(db, 'users', firebaseUser.uid))
+          .then((userDoc) => {
+            if (userDoc.exists()) {
+              const userData = userDoc.data();
+              const fullUser: User = {
+                id: firebaseUser.uid,
+                name: userData.name || firebaseUser.displayName || 'User',
+                email: firebaseUser.email || '',
+                phone: userData.phone,
+                role: userData.role || 'customer'
+              };
+              setUser(fullUser);
+            } else {
+              // Create user profile if it doesn't exist (in background)
+              const newUser: User = {
+                id: firebaseUser.uid,
+                name: firebaseUser.displayName || 'User',
+                email: firebaseUser.email || '',
+                role: 'customer'
+              };
+              setDoc(doc(db, 'users', firebaseUser.uid), {
+                name: newUser.name,
+                email: newUser.email,
+                role: newUser.role,
+                loyaltyPoints: 0,
+                memberSince: new Date().toISOString(),
+                favoriteOrders: [],
+                createdAt: new Date()
+              }).catch(console.error);
+              setUser(newUser);
+            }
+          })
+          .catch((error) => {
+            console.error('Error loading user profile:', error);
+            // Keep the temp user if Firestore fails
+          });
+      } else {
+        setUser(null);
+        setIsAuthenticated(false);
+        setLoading(false);
+      }
+    });
 
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-      setIsAuthenticated(true);
-    } else if (storedCustomerUser) {
-      const customerUser = JSON.parse(storedCustomerUser);
-      // Convert customer user to regular User type for consistency
-      const user: User = {
-        id: customerUser.id,
-        name: customerUser.name,
-        email: customerUser.email,
-        phone: customerUser.phone,
-        role: 'customer'
-      };
-      setUser(user);
-      setIsAuthenticated(true);
-    }
+    return () => unsubscribe();
   }, []);
 
   const login = async (email: string, password: string) => {
-    // This is a mock authentication
-    // In a real app, you would validate credentials against a backend
-    
-    // For demo purposes, we'll simulate different users with different roles
-    let mockUser: User;
-    
-    if (email === 'owner@coffee.com') {
-      mockUser = { id: '1', name: 'Owner', email, role: 'owner' };
-    } else if (email === 'manager@coffee.com') {
-      mockUser = { id: '2', name: 'Manager', email, role: 'manager' };
-    } else if (email === 'supervisor@coffee.com') {
-      mockUser = { id: '3', name: 'Supervisor', email, role: 'supervisor' };
-    } else if (email === 'waiter@coffee.com') {
-      mockUser = { id: '4', name: 'Waiter', email, role: 'waiter' };
-    } else {
-      // Default to an owner account for demo
-      mockUser = { id: '1', name: 'Owner', email: 'owner@coffee.com', role: 'owner' };
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
     }
-
-    // Store user in localStorage and update state
-    localStorage.setItem('user', JSON.stringify(mockUser));
-    setUser(mockUser);
-    setIsAuthenticated(true);
   };
 
-  const logout = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('customerUser');
-    setUser(null);
-    setIsAuthenticated(false);
+  const register = async (email: string, password: string, name: string, phone?: string) => {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      // User profile will be created in the onAuthStateChanged listener
+      await setDoc(doc(db, 'users', userCredential.user.uid), {
+        name,
+        email,
+        phone,
+        role: 'customer',
+        loyaltyPoints: 0,
+        memberSince: new Date().toISOString(),
+        favoriteOrders: [],
+        createdAt: new Date()
+      });
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw error;
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error('Logout error:', error);
+      throw error;
+    }
   };
 
   const hasPermission = (requiredRole: string) => {
     if (!user) return false;
-    
+
     // Check if user's role has enough permissions based on hierarchy
     const userRoleLevel = roleHierarchy[user.role] || 0;
     const requiredRoleLevel = roleHierarchy[requiredRole] || 0;
-    
+
     return userRoleLevel >= requiredRoleLevel;
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAuthenticated, hasPermission }}>
+    <AuthContext.Provider value={{
+      user,
+      login,
+      register,
+      logout,
+      isAuthenticated,
+      hasPermission,
+      loading
+    }}>
       {children}
     </AuthContext.Provider>
   );

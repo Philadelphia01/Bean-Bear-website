@@ -3,9 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, MapPin, Navigation, Globe, ArrowRight, MoreVertical } from 'lucide-react';
 import toast from 'react-hot-toast';
 import BottomNav from '../components/BottomNav';
+import { useAuth } from '../contexts/AuthContext';
+import { userService } from '../firebase/services';
 
 const NewAddressPage: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     title: '',
     address: '',
@@ -24,7 +27,7 @@ const NewAddressPage: React.FC = () => {
   };
 
   const handleBack = () => {
-    navigate('/checkout');
+    navigate('/home/checkout');
   };
 
   const handleUseCurrentLocation = () => {
@@ -64,36 +67,40 @@ const NewAddressPage: React.FC = () => {
     }
   };
 
-  const handleSaveAddress = () => {
+  const handleSaveAddress = async () => {
     if (!formData.title || !formData.address) {
       toast.error('Please fill in all required fields');
       return;
     }
 
-    // Get existing addresses from local storage
-    const existingAddresses = JSON.parse(localStorage.getItem('userAddresses') || '[]');
-    
-    // Create new address object
-    const newAddress = {
-      id: Date.now().toString(),
-      title: formData.title,
-      address: formData.address,
-      city: formData.city,
-      postalCode: formData.postalCode,
-      country: formData.country,
-      phone: formData.phone || '',
-      isDefault: existingAddresses.length === 0, // Set as default if it's the first address
-      icon: formData.title.toLowerCase().includes('home') ? 'home' : 
-            formData.title.toLowerCase().includes('office') || formData.title.toLowerCase().includes('work') ? 'office' :
-            'other'
-    };
+    try {
+      // Create new address object
+      const newAddress = {
+        id: Date.now().toString(),
+        title: formData.title,
+        address: formData.address,
+        city: formData.city,
+        postalCode: formData.postalCode,
+        country: formData.country,
+        phone: formData.phone || '',
+        isDefault: false, // Will be set by the service
+        icon: formData.title.toLowerCase().includes('home') ? 'home' :
+              formData.title.toLowerCase().includes('office') || formData.title.toLowerCase().includes('work') ? 'office' :
+              'other'
+      };
 
-    // Save to local storage
-    const updatedAddresses = [...existingAddresses, newAddress];
-    localStorage.setItem('userAddresses', JSON.stringify(updatedAddresses));
-    
-    toast.success('Address saved successfully!');
-    navigate('/addresses');
+      if (!user) {
+        toast.error('Please log in to save addresses');
+        return;
+      }
+      await userService.addUserAddress(user.id, newAddress);
+      toast.success('Address saved successfully!');
+      // Navigate back to addresses page, which will then allow selection back to checkout
+      navigate('/addresses');
+    } catch (error) {
+      console.error('Error saving address:', error);
+      toast.error('Failed to save address. Please try again.');
+    }
   };
 
   return (

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { CoffeeIcon, LogIn, UserPlus, AlertCircle, Eye, EyeOff, Phone, MapPin } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useAuth } from '../contexts/AuthContext';
 
 const CustomerLoginPage: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -17,6 +18,7 @@ const CustomerLoginPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const navigate = useNavigate();
+  const { login, register } = useAuth();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -32,22 +34,8 @@ const CustomerLoginPage: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // Simulate login validation
       if (formData.email && formData.password) {
-        // Create customer user object
-        const customerUser = {
-          id: `customer-${Date.now()}`,
-          name: formData.name || 'Customer',
-          email: formData.email,
-          phone: formData.phone,
-          role: 'customer' as const,
-          loyaltyPoints: 0,
-          memberSince: new Date().toISOString(),
-          favoriteOrders: []
-        };
-
-        // Store in localStorage
-        localStorage.setItem('customerUser', JSON.stringify(customerUser));
+        await login(formData.email, formData.password);
         toast.success('Login successful! Welcome back.');
         navigate('/');
       } else {
@@ -73,21 +61,8 @@ const CustomerLoginPage: React.FC = () => {
         return;
       }
 
-      // Create new customer user
-      const newCustomer = {
-        id: `customer-${Date.now()}`,
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        address: formData.address,
-        role: 'customer' as const,
-        loyaltyPoints: 50, // Welcome bonus
-        memberSince: new Date().toISOString(),
-        favoriteOrders: []
-      };
+      await register(formData.email, formData.password, formData.name, formData.phone);
 
-      // Store in localStorage
-      localStorage.setItem('customerUser', JSON.stringify(newCustomer));
       toast.success('Registration successful! Welcome to Bear & Bean.');
       navigate('/');
     } catch (err) {

@@ -1,32 +1,86 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Package, Clock, CheckCircle, XCircle, Truck, MapPin, MoreVertical } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { orderService } from '../firebase/services';
+import { ChevronLeft, Package, Clock, CheckCircle, XCircle, Truck, MapPin, MoreVertical, Phone, MessageCircle, User } from 'lucide-react';
 
 type OrderStatus = 'pending' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
 
-const statusConfig = {
+const statusConfig: Record<string, { color: string; icon: React.ComponentType<{ className?: string }>; label: string }> = {
   pending: { color: 'text-yellow-500', icon: Clock, label: 'Order Received' },
   preparing: { color: 'text-blue-500', icon: Package, label: 'Preparing' },
   ready: { color: 'text-green-500', icon: CheckCircle, label: 'Ready for Pickup' },
+  completed: { color: 'text-green-500', icon: CheckCircle, label: 'Completed' },
   delivered: { color: 'text-green-600', icon: Truck, label: 'Delivered' },
   cancelled: { color: 'text-red-500', icon: XCircle, label: 'Cancelled' }
 };
 
+// Default status for unknown statuses
+const defaultStatus = { color: 'text-gray-500', icon: Clock, label: 'Unknown' };
+
 const OrderHistoryPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useAuth();
   const [selectedOrder, setSelectedOrder] = useState<string | null>(null);
   const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    // Load orders from localStorage
-    const savedOrders = localStorage.getItem('userOrders');
-    if (savedOrders) {
-      setOrders(JSON.parse(savedOrders));
+    if (!user) {
+      setLoading(false);
+      return;
     }
-  }, []);
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-ZA', {
+    setLoading(true);
+    
+    // Subscribe to real-time order updates
+    const unsubscribe = orderService.subscribeToUserOrders(user.id, (userOrders) => {
+      setOrders(userOrders);
+      setLoading(false);
+    });
+
+    // Cleanup subscription on unmount
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, [user]);
+
+  // Auto-expand order if coming from tracking page with delivered status
+  useEffect(() => {
+    const autoExpandOrderId = location.state?.autoExpandOrderId;
+    if (autoExpandOrderId && orders.length > 0) {
+      // Wait a bit for DOM to update, then expand
+      const timer = setTimeout(() => {
+        setSelectedOrder(autoExpandOrderId);
+        // Scroll to the order if possible
+        setTimeout(() => {
+          const orderElement = document.getElementById(`order-${autoExpandOrderId}`);
+          if (orderElement) {
+            orderElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 100);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [location.state, orders]);
+
+  const formatDate = (dateString: string | any) => {
+    // Handle Firestore timestamp objects or ISO strings
+    let date: Date;
+    if (dateString?.toDate) {
+      date = dateString.toDate();
+    } else if (dateString?.seconds) {
+      date = new Date(dateString.seconds * 1000);
+    } else if (typeof dateString === 'string') {
+      date = new Date(dateString);
+    } else {
+      date = new Date();
+    }
+    
+    return date.toLocaleDateString('en-ZA', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
@@ -68,12 +122,25 @@ const OrderHistoryPage: React.FC = () => {
 
           {/* Orders List */}
           <div className="space-y-6">
-            {orders.map(order => {
-              const statusInfo = statusConfig[order.status as OrderStatus];
+            {loading ? (
+              <div className="text-center py-12">
+                <div className="text-gray-400">Loading orders...</div>
+              </div>
+            ) : orders.map(order => {
+              // Get status info with fallback for unknown statuses
+              const statusInfo = statusConfig[order.status as OrderStatus] || defaultStatus;
               const StatusIcon = statusInfo.icon;
+              
+              // Safety check: ensure order has required fields
+              if (!order || !order.id) {
+                return null;
+              }
+              
+              // Ensure items array exists
+              const orderItems = Array.isArray(order.items) ? order.items : [];
 
               return (
-                <div key={order.id} className="rounded-2xl p-6 backdrop-blur-sm shadow-lg" style={{ backgroundColor: '#1E1E1E', border: '1px solid #D4A76A40' }}>
+                <div key={order.id} id={`order-${order.id}`} className="rounded-2xl p-6 backdrop-blur-sm shadow-lg" style={{ backgroundColor: '#1E1E1E', border: '1px solid #D4A76A40' }}>
                   {/* Order Header */}
                   <div className="flex items-start justify-between mb-4 pb-4" style={{ borderBottom: '1px solid #D4A76A20' }}>
                     <div>
@@ -89,34 +156,87 @@ const OrderHistoryPage: React.FC = () => {
                   {/* Order Items */}
                   <div className="mb-4">
                     <p className="text-gray-400 text-sm mb-3 font-medium">
-                      {getTotalItems(order.items)} {getTotalItems(order.items) === 1 ? 'item' : 'items'} • {order.customer}
+                      {getTotalItems(orderItems)} {getTotalItems(orderItems) === 1 ? 'item' : 'items'} • {order.customer || 'N/A'}
                     </p>
                     <div className="space-y-2.5">
-                      {order.items.slice(0, 2).map((item: any) => (
-                        <div key={item.id} className="flex items-center justify-between">
-                          <span className="text-sm text-gray-300">
-                            <span className="text-primary font-medium">{item.quantity}x</span> {item.title}
-                          </span>
-                          <span className="text-sm" style={{ color: '#D4A76A' }}>R {(item.price * item.quantity).toFixed(2)}</span>
-                        </div>
-                      ))}
-                      {order.items.length > 2 && (
-                        <div className="text-sm text-gray-400 italic">
-                          +{order.items.length - 2} more {order.items.length - 2 === 1 ? 'item' : 'items'}
-                        </div>
+                      {orderItems.length > 0 ? (
+                        <>
+                          {orderItems.slice(0, 2).map((item: any, idx: number) => (
+                            <div key={item.id || `item-${idx}`} className="flex items-center justify-between">
+                              <span className="text-sm text-gray-300">
+                                <span className="text-primary font-medium">{item.quantity || 1}x</span> {item.title || 'Unknown Item'}
+                              </span>
+                              <span className="text-sm" style={{ color: '#D4A76A' }}>
+                                R {((item.price || 0) * (item.quantity || 1)).toFixed(2)}
+                              </span>
+                            </div>
+                          ))}
+                          {orderItems.length > 2 && (
+                            <div className="text-sm text-gray-400 italic">
+                              +{orderItems.length - 2} more {orderItems.length - 2 === 1 ? 'item' : 'items'}
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <p className="text-sm text-gray-400">No items found</p>
                       )}
                     </div>
                   </div>
+
+                  {/* Delivery Person (if assigned) */}
+                  {order.deliveryPerson && (
+                    <div className="mb-4 pt-4" style={{ borderTop: '1px solid #D4A76A20' }}>
+                      <div className="flex items-center justify-between p-3 rounded-xl" style={{ backgroundColor: '#0A0A0A' }}>
+                        <div className="flex items-center flex-1">
+                          <div className="w-10 h-10 rounded-full flex items-center justify-center mr-3" style={{ backgroundColor: '#D4A76A20' }}>
+                            {order.deliveryPerson.avatar ? (
+                              <img 
+                                src={order.deliveryPerson.avatar} 
+                                alt={order.deliveryPerson.name}
+                                className="w-full h-full rounded-full object-cover"
+                              />
+                            ) : (
+                              <User className="w-5 h-5" style={{ color: '#D4A76A' }} />
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-white text-sm font-medium">{order.deliveryPerson.name}</p>
+                            <p className="text-gray-400 text-xs">
+                              {order.deliveryPerson.vehicleId && `Driver - ${order.deliveryPerson.vehicleId}`}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <a
+                            href={`tel:${order.deliveryPerson.phone}`}
+                            className="w-10 h-10 rounded-full flex items-center justify-center transition-all"
+                            style={{ backgroundColor: '#D4A76A', color: '#000' }}
+                            title="Call driver"
+                          >
+                            <Phone className="w-4 h-4" />
+                          </a>
+                          <a
+                            href={`sms:${order.deliveryPerson.phone}`}
+                            className="w-10 h-10 rounded-full flex items-center justify-center transition-all"
+                            style={{ backgroundColor: '#D4A76A', color: '#000' }}
+                            title="Text driver"
+                          >
+                            <MessageCircle className="w-4 h-4" />
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Order Footer */}
                   <div className="flex items-start justify-between pt-4 mt-4" style={{ borderTop: '1px solid #D4A76A20' }}>
                     <div className="flex items-start text-gray-400 flex-1 mr-4">
                       <MapPin className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" style={{ color: '#D4A76A' }} />
-                      <span className="text-xs leading-relaxed">{order.address}</span>
+                      <span className="text-xs leading-relaxed">{order.address || 'No address provided'}</span>
                     </div>
                     <div className="text-right">
                       <p className="text-gray-400 text-xs mb-1">Total</p>
-                      <p className="font-bold text-lg" style={{ color: '#D4A76A' }}>R {order.total.toFixed(2)}</p>
+                      <p className="font-bold text-lg" style={{ color: '#D4A76A' }}>R {(order.total || 0).toFixed(2)}</p>
                     </div>
                   </div>
 
@@ -127,27 +247,80 @@ const OrderHistoryPage: React.FC = () => {
 
                       {/* All Items */}
                       <div className="space-y-3 mb-6">
-                        {order.items.map((item: any) => (
-                          <div key={item.id} className="flex items-center justify-between p-3 rounded-xl" style={{ backgroundColor: '#0A0A0A' }}>
-                            <div>
-                              <h5 className="font-medium text-white mb-1">{item.title}</h5>
-                              <p className="text-gray-400 text-xs">Qty: {item.quantity} × R {item.price.toFixed(2)}</p>
+                        {orderItems.length > 0 ? (
+                          orderItems.map((item: any, idx: number) => (
+                            <div key={item.id || `item-${idx}`} className="flex items-center justify-between p-3 rounded-xl" style={{ backgroundColor: '#0A0A0A' }}>
+                              <div>
+                                <h5 className="font-medium text-white mb-1">{item.title || 'Unknown Item'}</h5>
+                                <p className="text-gray-400 text-xs">Qty: {item.quantity || 1} × R {(item.price || 0).toFixed(2)}</p>
+                              </div>
+                              <span className="font-bold" style={{ color: '#D4A76A' }}>
+                                R {((item.price || 0) * (item.quantity || 1)).toFixed(2)}
+                              </span>
                             </div>
-                            <span className="font-bold" style={{ color: '#D4A76A' }}>R {(item.price * item.quantity).toFixed(2)}</span>
-                          </div>
-                        ))}
+                          ))
+                        ) : (
+                          <p className="text-gray-400 text-center py-4">No items found</p>
+                        )}
                       </div>
 
                       {/* Delivery Info */}
-                      <div className="p-4 rounded-xl" style={{ backgroundColor: '#0A0A0A' }}>
+                      <div className="p-4 rounded-xl mb-4" style={{ backgroundColor: '#0A0A0A' }}>
                         <h5 className="font-medium text-white mb-3">Delivery Information</h5>
                         <div className="space-y-2 text-sm text-gray-300">
-                          <p><strong className="text-gray-400">Customer:</strong> <span className="text-white">{order.customer}</span></p>
-                          <p><strong className="text-gray-400">Address:</strong> <span className="text-white">{order.address}</span></p>
+                          <p><strong className="text-gray-400">Customer:</strong> <span className="text-white">{order.customer || 'N/A'}</span></p>
+                          <p><strong className="text-gray-400">Address:</strong> <span className="text-white">{order.address || 'No address provided'}</span></p>
                           <p><strong className="text-gray-400">Order Date:</strong> <span className="text-white">{formatDate(order.date)}</span></p>
                           <p><strong className="text-gray-400">Status:</strong> <span style={{ color: '#D4A76A' }}>{statusInfo.label}</span></p>
                         </div>
                       </div>
+
+                      {/* Delivery Person Details */}
+                      {order.deliveryPerson && (
+                        <div className="p-4 rounded-xl" style={{ backgroundColor: '#0A0A0A' }}>
+                          <h5 className="font-medium text-white mb-3">Delivery Person</h5>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center flex-1">
+                              <div className="w-12 h-12 rounded-full flex items-center justify-center mr-3" style={{ backgroundColor: '#D4A76A20' }}>
+                                {order.deliveryPerson.avatar ? (
+                                  <img 
+                                    src={order.deliveryPerson.avatar} 
+                                    alt={order.deliveryPerson.name}
+                                    className="w-full h-full rounded-full object-cover"
+                                  />
+                                ) : (
+                                  <User className="w-6 h-6" style={{ color: '#D4A76A' }} />
+                                )}
+                              </div>
+                              <div>
+                                <p className="text-white font-medium">{order.deliveryPerson.name}</p>
+                                <p className="text-gray-400 text-xs">
+                                  {order.deliveryPerson.vehicleId && `Vehicle: ${order.deliveryPerson.vehicleId}`}
+                                </p>
+                                <p className="text-gray-400 text-xs">{order.deliveryPerson.phone}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <a
+                                href={`tel:${order.deliveryPerson.phone}`}
+                                className="w-12 h-12 rounded-full flex items-center justify-center transition-all"
+                                style={{ backgroundColor: '#D4A76A', color: '#000' }}
+                                title="Call driver"
+                              >
+                                <Phone className="w-5 h-5" />
+                              </a>
+                              <a
+                                href={`sms:${order.deliveryPerson.phone}`}
+                                className="w-12 h-12 rounded-full flex items-center justify-center transition-all"
+                                style={{ backgroundColor: '#D4A76A', color: '#000' }}
+                                title="Text driver"
+                              >
+                                <MessageCircle className="w-5 h-5" />
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 

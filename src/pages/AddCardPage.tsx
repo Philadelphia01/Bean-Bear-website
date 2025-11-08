@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { userService } from '../firebase/services';
 import { ChevronLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 import PaymentIcon from '../components/PaymentIcon';
@@ -13,6 +15,7 @@ const AddCardPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const locationState = location.state as LocationState | null;
+  const { user } = useAuth();
   const [cardData, setCardData] = useState({
     number: '',
     holderName: '',
@@ -63,7 +66,7 @@ const AddCardPage: React.FC = () => {
     return 'Unknown';
   };
 
-  const handleSaveCard = () => {
+  const handleSaveCard = async () => {
     // Validate required fields
     if (!cardData.number || !cardData.holderName || !cardData.expiryDate || !cardData.cvv) {
       toast.error('Please fill in all required fields');
@@ -90,35 +93,43 @@ const AddCardPage: React.FC = () => {
       return;
     }
 
-    // Save card to localStorage
-    const newCard = {
-      id: `card-${Date.now()}`,
-      last4: cardNumber.slice(-4),
-      brand: getCardBrand(cardNumber),
-      holderName: cardData.holderName,
-      expiryMonth: cardData.expiryDate.slice(0, 2),
-      expiryYear: cardData.expiryDate.slice(2, 4),
-      fullNumber: cardNumber // For demo purposes, in real app this should be encrypted
-    };
+    if (!user) {
+      toast.error('Please log in to save payment methods');
+      return;
+    }
 
-    const existingCards = JSON.parse(localStorage.getItem('savedCards') || '[]');
-    const updatedCards = cardData.saveCard
-      ? [...existingCards, newCard]
-      : existingCards;
+    try {
+      // Save card to Firebase
+      const newCard = {
+        last4: cardNumber.slice(-4),
+        brand: getCardBrand(cardNumber),
+        holderName: cardData.holderName,
+        expiryMonth: cardData.expiryDate.slice(0, 2),
+        expiryYear: cardData.expiryDate.slice(2, 4),
+        // Note: In production, card number should be tokenized/encrypted, not stored
+        fullNumber: cardNumber // For demo purposes only
+      };
 
-    localStorage.setItem('savedCards', JSON.stringify(updatedCards));
+      if (cardData.saveCard) {
+        await userService.addUserPaymentMethod(user.id, newCard);
+        toast.success('Card saved successfully!');
+      } else {
+        toast.success('Card added for this transaction!');
+      }
 
-    toast.success(cardData.saveCard ? 'Card saved successfully!' : 'Card added for this transaction!');
-
-    // Navigate back to payment methods or checkout
-    if (locationState?.fromPaymentMethods) {
-      navigate('/payment-methods', {
-        state: { selectedPaymentMethod: `card-${newCard.id}` }
-      });
-    } else {
-      navigate('/checkout', {
-        state: { selectedPaymentMethod: 'card' }
-      });
+      // Navigate back to payment methods or checkout
+      if (locationState?.fromPaymentMethods) {
+        navigate('/payment-methods', {
+          state: { selectedPaymentMethod: cardData.saveCard ? 'card' : 'card' }
+        });
+      } else {
+        navigate('/home/checkout', {
+          state: { selectedPaymentMethod: 'card' }
+        });
+      }
+    } catch (error) {
+      console.error('Error saving card:', error);
+      toast.error('Failed to save card. Please try again.');
     }
   };
 
@@ -134,7 +145,7 @@ const AddCardPage: React.FC = () => {
               if (locationState?.fromPaymentMethods) {
                 navigate('/payment-methods');
               } else {
-                navigate('/checkout');
+                navigate('/home/checkout');
               }
             }}
             className="absolute left-0 top-0 flex items-center text-primary hover:text-primary-dark transition-colors"

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
 import { Plus, Minus, ShoppingCart, ChevronLeft } from 'lucide-react';
-import { menuItems } from '../data/menuItems';
+import { menuService } from '../firebase/services';
 
 interface CustomizationOption {
   id: string;
@@ -17,6 +17,8 @@ const FoodItemDetail: React.FC = () => {
   const { addToCartWithCustomizations } = useCart();
 
   const [quantity, setQuantity] = useState(1);
+  const [item, setItem] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [customizations, setCustomizations] = useState<{
     size?: string;
     sugar?: string;
@@ -26,13 +28,33 @@ const FoodItemDetail: React.FC = () => {
     specialInstructions?: string;
   }>({});
 
-  const item = menuItems.find(item => item.id === id);
+  useEffect(() => {
+    const loadItem = async () => {
+      try {
+        const items = await menuService.getMenuItems();
+        const foundItem = items.find(item => item.id === id) || null;
+        setItem(foundItem);
+      } catch (error) {
+        console.error('Error loading item:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      loadItem();
+    }
+  }, [id]);
 
   useEffect(() => {
-    if (!item) {
-      navigate('/menu');
+    if (!loading && !item) {
+      navigate('/home/menu');
     }
-  }, [item, navigate]);
+  }, [item, loading, navigate]);
+
+  if (loading) {
+    return null;
+  }
 
   if (!item) {
     return null;
@@ -175,7 +197,7 @@ const FoodItemDetail: React.FC = () => {
 
   const handleAddToCart = () => {
     addToCartWithCustomizations(item, customizations, quantity);
-    navigate('/checkout');
+    navigate('/home/order');
   };
 
   const handleQuantityChange = (change: number) => {
@@ -206,7 +228,7 @@ const FoodItemDetail: React.FC = () => {
             >
               <ChevronLeft className="w-5 sm:w-6 h-5 sm:h-6" />
             </button>
-            <Link to="/order" className="relative text-primary hover:text-primary-dark transition-colors p-2 sm:p-3 rounded-xl bg-black/30 backdrop-blur-sm">
+            <Link to="/home/order" className="relative text-primary hover:text-primary-dark transition-colors p-2 sm:p-3 rounded-xl bg-black/30 backdrop-blur-sm">
               <ShoppingCart className="w-5 sm:w-6 h-5 sm:h-6" />
             </Link>
           </div>
@@ -314,7 +336,7 @@ const FoodItemDetail: React.FC = () => {
             onClick={handleAddToCart}
             className="w-full max-w-sm mx-auto block bg-primary hover:bg-primary-dark text-dark font-bold py-3 sm:py-4 px-6 sm:px-8 rounded-2xl transition-colors duration-300 shadow-lg hover:shadow-xl text-body"
           >
-            <span className="text-body font-bold">Proceed to Checkout</span>
+            <span className="text-body font-bold">Add to Order</span>
           </button>
         </div>
       </div>

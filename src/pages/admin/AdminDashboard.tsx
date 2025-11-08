@@ -1,6 +1,6 @@
-import React from 'react';
-import { orders } from '../../data/orders';
-import { menuItems } from '../../data/menuItems';
+import React, { useState, useEffect } from 'react';
+import { orderService } from '../../firebase/services';
+import { menuService } from '../../firebase/services';
 import {
   CreditCard,
   Clock,
@@ -10,6 +10,29 @@ import {
 } from 'lucide-react';
 
 const AdminDashboard: React.FC = () => {
+  const [orders, setOrders] = useState<any[]>([]);
+  const [menuItems, setMenuItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [ordersData, menuData] = await Promise.all([
+          orderService.getOrders(),
+          menuService.getMenuItems()
+        ]);
+        setOrders(ordersData);
+        setMenuItems(menuData);
+      } catch (error) {
+        console.error('Error loading dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
   // Calculate stats
   const totalOrders = orders.length;
   const pendingOrders = orders.filter(order => order.status === 'pending' || order.status === 'preparing').length;

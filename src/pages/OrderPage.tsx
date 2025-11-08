@@ -1,10 +1,21 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
+import { useAuth } from '../contexts/AuthContext';
 import { PlusIcon, History, Minus, ChevronLeft, Trash2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const OrderPage: React.FC = () => {
   const { cartItems, total, removeFromCart, updateQuantity } = useCart();
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+
+  // Check authentication when trying to proceed to checkout
+  useEffect(() => {
+    if (!authLoading && cartItems.length > 0 && !user) {
+      // Don't redirect immediately, just show a message when they try to checkout
+    }
+  }, [user, authLoading, cartItems.length]);
 
   const calculateItemPrice = (item: any) => {
     let basePrice = item.price;
@@ -54,11 +65,11 @@ const OrderPage: React.FC = () => {
     return customizations;
   };
 
-  const handleQuantityChange = (itemId: string, change: number) => {
-    const item = cartItems.find(item => item.id === itemId);
+  const handleQuantityChange = (cartItemId: string, change: number) => {
+    const item = cartItems.find(item => item.cartItemId === cartItemId);
     if (item) {
       const newQuantity = item.quantity + change;
-      updateQuantity(itemId, newQuantity);
+      updateQuantity(cartItemId, newQuantity);
     }
   };
 
@@ -75,7 +86,7 @@ const OrderPage: React.FC = () => {
             <ChevronLeft className="w-8 h-8" />
           </button>
           <Link
-            to="/order-history"
+            to="/home/order-history"
             className="p-2 text-primary hover:text-primary-dark transition-colors"
             title="View Order History"
           >
@@ -99,7 +110,7 @@ const OrderPage: React.FC = () => {
                   Your cart is empty. Add some delicious items from our menu to get started!
                 </p>
                 <Link
-                  to="/menu"
+                  to="/home/menu"
                   className="inline-flex items-center px-6 py-3 bg-primary text-dark rounded-lg hover:bg-primary-dark transition-colors font-medium"
                 >
                   <PlusIcon className="w-5 h-5 mr-2" />
@@ -114,7 +125,7 @@ const OrderPage: React.FC = () => {
                     const customizations = getCustomizationText(item);
 
                     return (
-                      <div key={`${item.id}-${JSON.stringify(item.customizations)}`} className="bg-dark p-4 rounded-lg">
+                      <div key={item.cartItemId} className="bg-dark p-4 rounded-lg">
                         <div className="flex items-start">
                           <img
                             src={item.image}
@@ -139,7 +150,7 @@ const OrderPage: React.FC = () => {
                                 )}
                               </div>
                               <button
-                                onClick={() => removeFromCart(item.id)}
+                                onClick={() => removeFromCart(item.cartItemId)}
                                 className="text-red-400 hover:text-red-300 transition-colors p-1"
                                 title="Remove item"
                               >
@@ -150,7 +161,7 @@ const OrderPage: React.FC = () => {
                             <div className="flex items-center justify-between">
                               <div className="flex items-center space-x-2">
                                 <button
-                                  onClick={() => handleQuantityChange(item.id, -1)}
+                                  onClick={() => handleQuantityChange(item.cartItemId, -1)}
                                   className="w-8 h-8 bg-primary/20 hover:bg-primary/30 rounded-full flex items-center justify-center transition-colors"
                                   disabled={item.quantity <= 1}
                                 >
@@ -158,7 +169,7 @@ const OrderPage: React.FC = () => {
                                 </button>
                                 <span className="text-body font-bold text-white px-3">{item.quantity}</span>
                                 <button
-                                  onClick={() => handleQuantityChange(item.id, 1)}
+                                  onClick={() => handleQuantityChange(item.cartItemId, 1)}
                                   className="w-8 h-8 bg-primary/20 hover:bg-primary/30 rounded-full flex items-center justify-center transition-colors"
                                 >
                                   <PlusIcon className="w-4 h-4 text-primary" />
@@ -190,17 +201,24 @@ const OrderPage: React.FC = () => {
 
                 <div className="flex gap-4">
                   <Link
-                    to="/menu"
+                    to="/home/menu"
                     className="flex-1 py-3 border border-primary text-primary rounded-lg hover:bg-primary/10 transition-colors text-center"
                   >
                     <span className="text-body font-medium">Add More Items</span>
                   </Link>
-                  <Link
-                    to="/checkout"
+                  <button
+                    onClick={() => {
+                      if (!user) {
+                        toast.error('Please sign in to proceed to checkout');
+                        navigate('/login', { state: { from: '/home/checkout' } });
+                      } else {
+                        navigate('/home/checkout');
+                      }
+                    }}
                     className="flex-1 py-3 bg-primary text-dark rounded-lg hover:bg-primary-dark transition-colors text-center"
                   >
                     <span className="text-body font-bold">Proceed to Checkout</span>
-                  </Link>
+                  </button>
                 </div>
               </div>
             )}

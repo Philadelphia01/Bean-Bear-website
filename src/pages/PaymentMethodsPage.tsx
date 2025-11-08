@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { userService } from '../firebase/services';
 import { Plus, ChevronLeft, Check } from 'lucide-react';
 import PaymentIcon from '../components/PaymentIcon';
 import BottomNav from '../components/BottomNav';
+import toast from 'react-hot-toast';
 
 interface SavedCard {
   id: string;
@@ -16,18 +19,33 @@ interface SavedCard {
 const PaymentMethodsPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const [selectedMethod, setSelectedMethod] = useState(
     location.state?.selectedPaymentMethod || ''
   );
   const [savedCards, setSavedCards] = useState<SavedCard[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
-  // Load saved cards from localStorage
+  // Load saved cards from Firebase
   useEffect(() => {
-    const saved = localStorage.getItem('savedCards');
-    if (saved) {
-      setSavedCards(JSON.parse(saved));
-    }
-  }, []);
+    const loadPaymentMethods = async () => {
+      if (user) {
+        try {
+          const paymentMethods = await userService.getUserPaymentMethods(user.id);
+          setSavedCards(paymentMethods as SavedCard[]);
+        } catch (error) {
+          console.error('Error loading payment methods:', error);
+          toast.error('Failed to load payment methods');
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setLoading(false);
+      }
+    };
+
+    loadPaymentMethods();
+  }, [user]);
 
   const paymentOptions = [
     {
@@ -52,6 +70,13 @@ const PaymentMethodsPage: React.FC = () => {
 
   const handleMethodSelect = (method: string) => {
     setSelectedMethod(method);
+    // If we came from checkout, navigate back immediately when selecting a saved card
+    const fromCheckout = location.state?.fromCheckout;
+    if (fromCheckout && method.startsWith('card-')) {
+      navigate('/home/checkout', {
+        state: { selectedPaymentMethod: method }
+      });
+    }
   };
 
   const handleAddCard = () => {
@@ -61,14 +86,14 @@ const PaymentMethodsPage: React.FC = () => {
   };
 
   const handleBack = () => {
-    navigate('/checkout', {
+    navigate('/home/checkout', {
       state: { selectedPaymentMethod: selectedMethod }
     });
   };
 
   const handleNext = () => {
     if (selectedMethod) {
-      navigate('/checkout', {
+      navigate('/home/checkout', {
         state: { selectedPaymentMethod: selectedMethod }
       });
     }

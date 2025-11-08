@@ -6,9 +6,9 @@ const BottomNav: React.FC = () => {
   const location = useLocation();
 
   const navItems = [
-    { path: '/', icon: HomeIcon, label: 'Home' },
-    { path: '/menu', icon: MenuIcon, label: 'Menu' },
-    { path: '/order', icon: ShoppingBagIcon, label: 'Order' },
+    { path: '/home', icon: HomeIcon, label: 'Home' },
+    { path: '/home/menu', icon: MenuIcon, label: 'Menu' },
+    { path: '/home/order', icon: ShoppingBagIcon, label: 'Order' },
     { path: '/login', icon: UserIcon, label: 'Account' },
   ];
 

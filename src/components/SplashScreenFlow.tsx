@@ -22,7 +22,14 @@ const SplashScreenFlow: React.FC = () => {
 
   const handleGetStarted = () => {
     setShowSecondSplash(false);
-    navigate('/home');
+    // Navigate to home and replace the current history entry to prevent going back to splash
+    navigate('/home', { replace: true });
+  };
+
+  // Mark splash as seen when user completes the flow
+  const handleSplashComplete = () => {
+    localStorage.setItem('hasSeenSplash', 'true');
+    handleGetStarted();
   };
 
   if (showFirstSplash) {
@@ -30,7 +37,7 @@ const SplashScreenFlow: React.FC = () => {
   }
 
   if (showSecondSplash) {
-    return <SecondSplashScreen onGetStarted={handleGetStarted} />;
+    return <SecondSplashScreen onGetStarted={handleSplashComplete} />;
   }
 
   return null;

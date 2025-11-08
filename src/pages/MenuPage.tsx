@@ -1,17 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { menuItems } from '../data/menuItems';
 import { Plus, ChevronLeft, Search, Heart, ShoppingCart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
+import { menuService } from '../firebase/services';
 
 const MenuPage: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [menuItems, setMenuItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   const navigate = useNavigate();
   const { cartItems } = useCart();
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+
+  useEffect(() => {
+    setLoading(true);
+    
+    // Subscribe to real-time menu updates
+    const unsubscribe = menuService.subscribeToMenu((items) => {
+      // Remove duplicates from menuItems
+      const uniqueItems = items.filter((item, index, self) =>
+        index === self.findIndex(t => t.id === item.id)
+      );
+      setMenuItems(uniqueItems);
+      setLoading(false);
+    });
+
+    // Cleanup subscription on unmount
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, []);
 
   const toggleFavorite = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -42,7 +65,7 @@ const MenuPage: React.FC = () => {
   });
 
   const handleAddToCart = (item: any) => {
-    navigate(`/item/${item.id}`);
+    navigate(`/home/item/${item.id}`);
   };
 
   return (
@@ -58,7 +81,7 @@ const MenuPage: React.FC = () => {
             <ChevronLeft className="w-8 h-8" />
           </button>
           <Link
-            to="/order"
+            to="/home/order"
             className="relative p-2 text-primary hover:text-primary-dark transition-colors"
             aria-label="Shopping Cart"
           >
@@ -115,8 +138,20 @@ const MenuPage: React.FC = () => {
             </div>
 
             {/* Menu Items */}
-            <div className="grid grid-cols-2 gap-4 px-2">
-              {filteredItems.map(item => (
+            {loading ? (
+              <div className="flex justify-center items-center py-12">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                  <p className="text-gray-400">Loading menu...</p>
+                </div>
+              </div>
+            ) : filteredItems.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-400">No items found</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4 px-2">
+                {filteredItems.map(item => (
                 <div 
                   key={item.id} 
                   className="bg-dark-light rounded-xl p-3 group hover:bg-dark-light/80 transition-colors relative"
@@ -152,10 +187,21 @@ const MenuPage: React.FC = () => {
                       <h3 className="text-sm font-medium text-white line-clamp-1 pr-2">{item.title}</h3>
                       <span className="text-primary font-bold text-sm whitespace-nowrap">R {item.price}</span>
                     </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAddToCart(item);
+                      }}
+                      className="mt-3 w-full inline-flex items-center justify-center gap-2 bg-primary text-dark rounded-full py-2 text-xs font-semibold uppercase tracking-wide hover:bg-primary-dark transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add to Cart
+                    </button>
                   </div>
                 </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </section>
       </div>

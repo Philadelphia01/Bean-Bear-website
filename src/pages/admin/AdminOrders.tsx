@@ -1,10 +1,27 @@
-import React, { useState } from 'react';
-import { orders } from '../../data/orders';
+import React, { useState, useEffect } from 'react';
+import { orderService } from '../../firebase/services';
 import { CheckCircle, XCircle, Clock, TruckIcon, Search } from 'lucide-react';
 
 const AdminOrders: React.FC = () => {
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
+
+  useEffect(() => {
+    const loadOrders = async () => {
+      try {
+        const ordersData = await orderService.getOrders();
+        setOrders(ordersData);
+      } catch (error) {
+        console.error('Error loading orders:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadOrders();
+  }, []);
 
   const filteredOrders = orders.filter(order => {
     // Filter by status
@@ -41,10 +58,21 @@ const AdminOrders: React.FC = () => {
     }
   };
 
-  const handleStatusChange = (orderId: string, newStatus: string) => {
-    // In a real app, this would update the database
-    console.log(`Changing order ${orderId} status to ${newStatus}`);
-    // For demo purposes, we're just logging this
+  const handleStatusChange = async (orderId: string, newStatus: string) => {
+    try {
+      // Update the order status in the database
+      await orderService.updateOrder(orderId, { status: newStatus });
+      
+      // Update local state optimistically
+      setOrders(prevOrders => 
+        prevOrders.map(order => 
+          order.id === orderId ? { ...order, status: newStatus } : order
+        )
+      );
+    } catch (error) {
+      console.error('Error updating order status:', error);
+      // Optionally show an error message to the user
+    }
   };
 
   return (

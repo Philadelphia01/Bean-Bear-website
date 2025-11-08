@@ -1,17 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { userService } from '../firebase/services';
 import { ChevronLeft, Search, MoreVertical, MapPin, Home, Building, Building2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import BottomNav from '../components/BottomNav';
-
-// Get addresses from local storage or use empty array if none exist
-const getAddresses = () => {
-  if (typeof window !== 'undefined') {
-    const savedAddresses = localStorage.getItem('userAddresses');
-    return savedAddresses ? JSON.parse(savedAddresses) : [];
-  }
-  return [];
-};
 
 const getAddressIcon = (title: string, iconType: string) => {
   const titleLower = title.toLowerCase();
@@ -29,23 +22,38 @@ const getAddressIcon = (title: string, iconType: string) => {
 
 const AddressesPage: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
-  const [addresses, setAddresses] = useState(getAddresses());
+  const [addresses, setAddresses] = useState<any[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    const loadAddresses = async () => {
+      if (user) {
+        try {
+          const userAddresses = await userService.getUserAddresses(user.id);
+          setAddresses(userAddresses);
+        } catch (error) {
+          console.error('Error loading addresses:', error);
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setLoading(false);
+      }
+    };
+
+    loadAddresses();
+  }, [user]);
 
   const handleBack = () => {
-    navigate('/checkout');
+    navigate('/home/checkout');
   };
 
   const handleSelectAddress = (address: any) => {
-    navigate('/checkout', {
+    navigate('/home/checkout', {
       state: {
-        selectedAddress: {
-          title: address.title,
-          address: address.address,
-          city: address.city,
-          postalCode: address.postalCode,
-          phone: address.phone
-        }
+        selectedAddress: address
       }
     });
   };
@@ -56,12 +64,17 @@ const AddressesPage: React.FC = () => {
     (address.city && address.city.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  const handleDeleteAddress = (id: string, e: React.MouseEvent) => {
+  const handleDeleteAddress = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const updatedAddresses = addresses.filter((addr: any) => addr.id !== id);
-    setAddresses(updatedAddresses);
-    localStorage.setItem('userAddresses', JSON.stringify(updatedAddresses));
-    toast.success('Address deleted successfully');
+    try {
+      await userService.deleteUserAddress(id);
+      const updatedAddresses = addresses.filter((addr: any) => addr.id !== id);
+      setAddresses(updatedAddresses);
+      toast.success('Address deleted successfully');
+    } catch (error) {
+      console.error('Error deleting address:', error);
+      toast.error('Failed to delete address');
+    }
   };
 
   return (
@@ -106,7 +119,11 @@ const AddressesPage: React.FC = () => {
       {/* Address List */}
       <div className="px-4 pb-8">
         <div className="mt-6 space-y-4">
-          {filteredAddresses.map((address: any) => (
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="text-gray-400">Loading addresses...</div>
+            </div>
+          ) : filteredAddresses.map((address: any) => (
             <div
               key={address.id}
               onClick={() => handleSelectAddress(address)}

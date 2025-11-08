@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
-import { menuItems } from '../../data/menuItems';
+import React, { useState, useEffect } from 'react';
+import { menuService } from '../../firebase/services';
 import { Plus, Edit2, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const AdminMenu: React.FC = () => {
+  const [menuItems, setMenuItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [editingItem, setEditingItem] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -24,6 +26,22 @@ const AdminMenu: React.FC = () => {
     { id: 'hot beverages', name: 'Hot Beverages' },
     { id: 'cold drinks', name: 'Cold Drinks' }
   ];
+
+  useEffect(() => {
+    const loadMenuItems = async () => {
+      try {
+        const items = await menuService.getMenuItems();
+        setMenuItems(items);
+      } catch (error) {
+        console.error('Error loading menu items:', error);
+        toast.error('Failed to load menu items');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadMenuItems();
+  }, []);
 
   const filteredItems = activeCategory === 'all'
     ? menuItems
@@ -69,21 +87,59 @@ const AdminMenu: React.FC = () => {
     setShowAddForm(false);
   };
 
-  const handleSave = () => {
-    // In a real app, this would update the database
-    console.log('Saving item:', formData);
-    toast.success(`${editingItem ? 'Updated' : 'Added'} menu item successfully`);
-    setEditingItem(null);
-    setShowAddForm(false);
-  };
+  const handleSave = async () => {
+    try {
+      const itemData = {
+        ...formData,
+        allergens: formData.allergens.split(',').map(a => a.trim()).filter(a => a)
+      };
 
-  const handleDelete = (id: string) => {
-    if (window.confirm('Are you sure you want to delete this item?')) {
-      // In a real app, this would update the database
-      console.log('Deleting item:', id);
-      toast.success('Menu item deleted successfully');
+      if (editingItem) {
+        await menuService.updateMenuItem(editingItem, itemData);
+        toast.success('Menu item updated successfully');
+      } else {
+        await menuService.addMenuItem(itemData);
+        toast.success('Menu item added successfully');
+      }
+
+      // Reload menu items
+      const items = await menuService.getMenuItems();
+      setMenuItems(items);
+
+      setEditingItem(null);
+      setShowAddForm(false);
+    } catch (error) {
+      console.error('Error saving menu item:', error);
+      toast.error('Failed to save menu item');
     }
   };
+
+  const handleDelete = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this item?')) {
+      try {
+        await menuService.deleteMenuItem(id);
+        toast.success('Menu item deleted successfully');
+
+        // Reload menu items
+        const items = await menuService.getMenuItems();
+        setMenuItems(items);
+      } catch (error) {
+        console.error('Error deleting menu item:', error);
+        toast.error('Failed to delete menu item');
+      }
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Loading menu items...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>

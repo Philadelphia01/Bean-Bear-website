@@ -1,7 +1,7 @@
 import React from 'react';
-import { CheckCircle, Clock, Package, Truck, MapPin } from 'lucide-react';
+import { CheckCircle, Package, Truck, MapPin } from 'lucide-react';
 
-type OrderStatus = 'pending' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
+type OrderStatus = 'pending' | 'preparing' | 'ready' | 'completed' | 'delivered' | 'cancelled';
 
 interface TrackingStage {
   id: string;
@@ -13,19 +13,43 @@ interface TrackingStage {
   time?: string;
 }
 
+interface OrderItem {
+  title: string;
+  quantity: number;
+  category?: string;
+}
+
 interface OrderTrackingTimelineProps {
   orderStatus: OrderStatus;
   orderDate: string;
   estimatedDelivery?: string;
   showMap?: boolean;
+  orderItems?: OrderItem[];
 }
 
 const OrderTrackingTimeline: React.FC<OrderTrackingTimelineProps> = ({
   orderStatus,
   orderDate,
   estimatedDelivery,
-  showMap = false
+  showMap = false,
+  orderItems = []
 }) => {
+  // Generate dynamic description based on order items
+  const getPreparingDescription = (): string => {
+    if (orderItems.length === 0) {
+      return 'Your order is being prepared with care';
+    }
+
+    // If single item, use the item name
+    if (orderItems.length === 1) {
+      const item = orderItems[0];
+      return `Your ${item.title} is being prepared with care`;
+    }
+
+    // Multiple items - use generic message
+    return 'Your order is being prepared with care';
+  };
+
   const getStages = (status: OrderStatus): TrackingStage[] => {
     const baseStages = [
       {
@@ -40,11 +64,11 @@ const OrderTrackingTimeline: React.FC<OrderTrackingTimelineProps> = ({
       {
         id: 'preparing',
         title: 'Preparing',
-        description: 'Your coffee is being prepared with care',
+        description: getPreparingDescription(),
         icon: Package,
-        completed: ['preparing', 'ready', 'delivered'].includes(status),
+        completed: ['preparing', 'ready', 'completed', 'delivered'].includes(status),
         current: status === 'preparing',
-        time: status === 'preparing' || status === 'ready' || status === 'delivered'
+        time: ['preparing', 'ready', 'completed', 'delivered'].includes(status)
           ? new Date(Date.now() + 5 * 60 * 1000).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' })
           : undefined
       },
@@ -53,20 +77,22 @@ const OrderTrackingTimeline: React.FC<OrderTrackingTimelineProps> = ({
         title: 'Ready for Pickup',
         description: 'Your order is ready for delivery',
         icon: Truck,
-        completed: ['ready', 'delivered'].includes(status),
+        completed: ['ready', 'completed', 'delivered'].includes(status),
         current: status === 'ready',
-        time: status === 'ready' || status === 'delivered'
+        time: ['ready', 'completed', 'delivered'].includes(status)
           ? new Date(Date.now() + 15 * 60 * 1000).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' })
           : undefined
       },
       {
         id: 'delivered',
-        title: 'Delivered',
-        description: 'Order has been delivered successfully',
+        title: status === 'completed' ? 'Completed' : 'Delivered',
+        description: status === 'completed' 
+          ? 'Order has been completed successfully' 
+          : 'Order has been delivered successfully',
         icon: MapPin,
-        completed: status === 'delivered',
-        current: status === 'delivered',
-        time: status === 'delivered'
+        completed: ['completed', 'delivered'].includes(status),
+        current: ['completed', 'delivered'].includes(status),
+        time: ['completed', 'delivered'].includes(status)
           ? new Date(Date.now() + 25 * 60 * 1000).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' })
           : estimatedDelivery
       }
@@ -84,9 +110,8 @@ const OrderTrackingTimeline: React.FC<OrderTrackingTimelineProps> = ({
         <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-600"></div>
 
         <div className="space-y-8">
-          {stages.map((stage, index) => {
+          {stages.map((stage) => {
             const Icon = stage.icon;
-            const isLast = index === stages.length - 1;
 
             return (
               <div key={stage.id} className="relative flex items-start">
