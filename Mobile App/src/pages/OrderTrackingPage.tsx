@@ -118,7 +118,7 @@ const OrderTrackingPage: React.FC = () => {
       <div className="px-4 py-6">
         {/* Live Tracking Map - Show when driver assigned and order completed */}
         {(order.deliveryPerson && order.status === 'completed' && order.status !== 'delivered') ? (
-          <div className="mb-6">
+          <div className="mb-6 -mx-4">
             <DeliveryMap 
               orderId={order.id} 
               showRoute={true}
@@ -127,7 +127,7 @@ const OrderTrackingPage: React.FC = () => {
           </div>
         ) : (
           /* Static Map - Show when tracking not available */
-          <div className="rounded-2xl overflow-hidden mb-6 shadow-lg" style={{ border: '1px solid #D4A76A40' }}>
+          <div className="mb-6 -mx-4">
             <DeliveryMap 
               orderId={order.id} 
               showRoute={false}

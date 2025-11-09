@@ -1,8 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { menuService } from '../../firebase/services';
-import { Plus, Edit2, Trash2, Check, X, Upload, Loader } from 'lucide-react';
+import { Plus, Edit2, Trash2, Check, X, Upload, Loader, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { uploadImageToCloudinary } from '../../services/cloudinary';
+
+// Check if Cloudinary is configured
+const isCloudinaryConfigured = () => {
+  const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+  const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+  return cloudName && uploadPreset && 
+         cloudName !== 'your_cloud_name_here' && 
+         uploadPreset !== 'your_upload_preset_name_here';
+};
 
 const AdminMenu: React.FC = () => {
   const [menuItems, setMenuItems] = useState<any[]>([]);
@@ -80,7 +89,16 @@ const AdminMenu: React.FC = () => {
       toast.success('Image uploaded successfully!');
     } catch (error: any) {
       console.error('Error uploading image:', error);
-      toast.error(error.message || 'Failed to upload image. Please check your Cloudinary configuration.');
+      
+      // Provide helpful error message for missing configuration
+      if (error.message?.includes('Cloudinary configuration is missing')) {
+        toast.error(
+          'Cloudinary is not configured. Please set up your Cloudinary credentials in the .env file. Check CLOUDINARY_SETUP.md for instructions.',
+          { duration: 6000 }
+        );
+      } else {
+        toast.error(error.message || 'Failed to upload image. You can still enter an image URL manually.');
+      }
     } finally {
       setUploadingImage(false);
       // Reset file input
@@ -324,9 +342,26 @@ const AdminMenu: React.FC = () => {
             <div>
               <label className="block mb-2">Image</label>
               <div className="space-y-2">
+                {/* Cloudinary Configuration Warning */}
+                {!isCloudinaryConfigured() && (
+                  <div className="flex items-start gap-2 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                    <AlertCircle className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+                    <div className="text-xs text-yellow-200">
+                      <strong>Cloudinary not configured:</strong> Image upload is disabled. 
+                      Please configure Cloudinary in your <code className="bg-dark px-1 rounded">.env</code> file.
+                      See <code className="bg-dark px-1 rounded">CLOUDINARY_SETUP.md</code> for instructions.
+                      You can still enter an image URL manually below.
+                    </div>
+                  </div>
+                )}
+                
                 {/* File Upload Button */}
                 <div className="flex items-center gap-2">
-                  <label className="flex items-center gap-2 px-4 py-2 bg-primary text-dark rounded-lg cursor-pointer hover:bg-primary-dark transition-colors text-sm font-medium">
+                  <label className={`flex items-center gap-2 px-4 py-2 rounded-lg cursor-pointer transition-colors text-sm font-medium ${
+                    isCloudinaryConfigured() 
+                      ? 'bg-primary text-dark hover:bg-primary-dark' 
+                      : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                  }`}>
                     {uploadingImage ? (
                       <>
                         <Loader className="w-4 h-4 animate-spin" />
@@ -343,7 +378,7 @@ const AdminMenu: React.FC = () => {
                       accept="image/*"
                       onChange={handleImageUpload}
                       className="hidden"
-                      disabled={uploadingImage}
+                      disabled={uploadingImage || !isCloudinaryConfigured()}
                     />
                   </label>
                   <span className="text-xs text-gray-400">or</span>
@@ -360,7 +395,10 @@ const AdminMenu: React.FC = () => {
                   required
                 />
                 <p className="text-xs text-gray-500">
-                  💡 <strong>Upload:</strong> Click "Upload to Cloudinary" to upload an image file, or enter a URL manually.
+                  💡 <strong>Upload:</strong> {isCloudinaryConfigured() 
+                    ? 'Click "Upload to Cloudinary" to upload an image file, or enter a URL manually.'
+                    : 'Enter an image URL manually. To enable uploads, configure Cloudinary in your .env file.'
+                  }
                   <br />
                   Supported formats: JPG, PNG, GIF, WebP (max 5MB)
                 </p>

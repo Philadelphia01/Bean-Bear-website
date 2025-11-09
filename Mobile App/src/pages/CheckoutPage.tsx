@@ -42,13 +42,16 @@ const CheckoutPage: React.FC = () => {
   const location = useLocation();
 
   // Initialize formData with user data when user is available
+  // Only update if fields are empty to avoid overwriting selected address
   useEffect(() => {
     if (user) {
       setFormData(prev => ({
         ...prev,
+        // Only set name/email/phone if they're not already set (don't overwrite selected address data)
         name: prev.name || user.name || '',
         email: prev.email || user.email || '',
         phone: prev.phone || user.phone || ''
+        // Address fields are handled separately when user selects an address
       }));
     }
   }, [user]);
@@ -156,6 +159,7 @@ const CheckoutPage: React.FC = () => {
     loadUserData();
   }, [user]);
 
+  // Process navigation state when component mounts or location state changes
   React.useEffect(() => {
     // Check if we have state from navigation (e.g., returning from delivery info)
     if (location.state?.formData) {
@@ -169,24 +173,33 @@ const CheckoutPage: React.FC = () => {
     // Check if we have selected address from addresses page
     if (location.state?.selectedAddress) {
       const selectedAddress = location.state.selectedAddress;
-      setFormData(prev => ({
-        ...prev,
-        address: selectedAddress.address || prev.address,
-        city: selectedAddress.city || prev.city,
-        postalCode: selectedAddress.postalCode || prev.postalCode,
-        phone: selectedAddress.phone || prev.phone,
-        // Ensure name and email are preserved - don't overwrite if they exist
-        name: prev.name || user?.name || 'John Smith',
-        email: prev.email || user?.email || 'john.smith@email.com'
-      }));
+      
+      console.log('📍 Received selected address:', selectedAddress);
+      
+      setFormData(prev => {
+        const newFormData = {
+          ...prev,
+          address: selectedAddress.address || prev.address,
+          city: selectedAddress.city || prev.city,
+          postalCode: selectedAddress.postalCode || prev.postalCode,
+          phone: selectedAddress.phone || prev.phone,
+          // Ensure name and email are preserved - don't overwrite if they exist
+          name: prev.name || user?.name || '',
+          email: prev.email || user?.email || ''
+        };
+        console.log('📍 Updated formData:', newFormData);
+        return newFormData;
+      });
       setShowAddressDetails(true);
+      
+      toast.success('Address selected successfully');
     }
 
     // Check if we have state from navigation (e.g., returning from payment methods)
     if (location.state?.selectedPaymentMethod) {
       setPaymentMethod(location.state.selectedPaymentMethod);
     }
-  }, [location.state, user]);
+  }, [location.state?.selectedAddress, location.state?.formData, location.state?.deliveryInfoCompleted, location.state?.selectedPaymentMethod, user]);
 
   const calculateItemPrice = (item: typeof cartItems[number]) => {
     let basePrice = item.price;

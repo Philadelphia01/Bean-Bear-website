@@ -108,25 +108,58 @@ const AddressesPage: React.FC = () => {
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            onClick={() => navigate('/new-address')}
-            className="w-full pl-12 pr-4 py-3 rounded-2xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 transition-colors backdrop-blur-sm shadow-lg cursor-pointer"
+            onFocus={() => {
+              // Only navigate to new address if search is empty and user clicks to search
+              // Don't auto-navigate on focus to avoid interfering with address selection
+            }}
+            className="w-full pl-12 pr-4 py-3 rounded-2xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 transition-colors backdrop-blur-sm shadow-lg"
             style={{ backgroundColor: '#1E1E1E', border: `1px solid #D4A76A40`, borderRadius: '20px' }}
-            placeholder="Find an Address"
+            placeholder="Search addresses or tap address to select"
           />
         </div>
       </div>
 
+      {/* Add New Address Button */}
+      <div className="px-4 mb-4">
+        <button
+          onClick={() => navigate('/new-address')}
+          className="w-full p-4 rounded-2xl transition-all duration-200 cursor-pointer backdrop-blur-sm shadow-lg flex items-center justify-center gap-2"
+          style={{
+            backgroundColor: '#1E1E1E',
+            border: `2px dashed #D4A76A60`,
+            borderRadius: '20px'
+          }}
+        >
+          <MapPin className="w-5 h-5" style={{ color: '#D4A76A' }} />
+          <span className="text-white font-medium">Add New Address</span>
+        </button>
+      </div>
+
       {/* Address List */}
       <div className="px-4 pb-8">
-        <div className="mt-6 space-y-4">
+        <div className="mt-2 space-y-4">
           {loading ? (
             <div className="text-center py-12">
               <div className="text-gray-400">Loading addresses...</div>
             </div>
+          ) : filteredAddresses.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-gray-400">No addresses found. Add a new address to continue.</div>
+            </div>
           ) : filteredAddresses.map((address: any) => (
             <div
               key={address.id}
-              onClick={() => handleSelectAddress(address)}
+              onClick={() => {
+                console.log('📍 Address card clicked:', address.id);
+                handleSelectAddress(address);
+              }}
+              onTouchStart={(e) => {
+                // Handle touch events for mobile
+                e.currentTarget.style.opacity = '0.8';
+              }}
+              onTouchEnd={(e) => {
+                e.currentTarget.style.opacity = '1';
+              }}
               className={`relative p-4 rounded-2xl transition-all duration-200 cursor-pointer backdrop-blur-sm shadow-lg ${
                 address.isDefault ? 'shadow-orange-400/20' : ''
               }`}
@@ -177,7 +210,14 @@ const AddressesPage: React.FC = () => {
                 </div>
 
                 {/* Menu Button */}
-                <button className="flex-shrink-0 transition-colors" style={{ color: '#D4A76A' }}>
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // Menu functionality can be added here if needed
+                  }}
+                  className="flex-shrink-0 transition-colors" 
+                  style={{ color: '#D4A76A' }}
+                >
                   <MoreVertical className="w-5 h-5" />
                 </button>
               </div>
