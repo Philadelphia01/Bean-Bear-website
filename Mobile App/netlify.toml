@@ -4,10 +4,12 @@
 
 # SPA redirect - all routes should go to index.html for client-side routing
 # This redirects all non-file requests to index.html
+# Netlify will automatically serve existing files (like assets) and only redirect non-existent paths
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+  force = false
 
 [[headers]]
   for = "/*"

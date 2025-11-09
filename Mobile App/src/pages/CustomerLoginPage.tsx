@@ -37,7 +37,7 @@ const CustomerLoginPage: React.FC = () => {
       if (formData.email && formData.password) {
         await login(formData.email, formData.password);
         toast.success('Login successful! Welcome back.');
-        navigate('/');
+        navigate('/home');
       } else {
         setError('Please enter email and password');
       }
@@ -64,7 +64,7 @@ const CustomerLoginPage: React.FC = () => {
       await register(formData.email, formData.password, formData.name, formData.phone);
 
       toast.success('Registration successful! Welcome to Bear & Bean.');
-      navigate('/');
+      navigate('/home');
     } catch (err) {
       setError('Registration failed. Please try again.');
     } finally {

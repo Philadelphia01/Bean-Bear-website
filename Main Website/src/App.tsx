@@ -32,7 +32,7 @@ function App() {
       <Route path="/login" element={<LoginPage />} />
       
       <Route path="/admin" element={
-        <ProtectedRoute>
+        <ProtectedRoute requiredRole={undefined}>
           <AdminLayout />
         </ProtectedRoute>
       }>

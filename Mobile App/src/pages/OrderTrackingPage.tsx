@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ChevronLeft, MoreVertical, Phone, MessageCircle, User } from 'lucide-react';
 import OrderTrackingTimeline from '../components/OrderTrackingTimeline';
+import DeliveryMap from '../components/DeliveryMap';
 import BottomNav from '../components/BottomNav';
 import { orderService } from '../firebase/services';
 import { useAuth } from '../contexts/AuthContext';
@@ -31,27 +32,27 @@ const OrderTrackingPage: React.FC = () => {
           // Update the ref with the new status
           previousStatusRef.current = newStatus;
           
-          // If status changed to delivered or completed, navigate away
-          if ((newStatus === 'delivered' || newStatus === 'completed') && 
-              previousStatus !== 'delivered' && previousStatus !== 'completed') {
-            // If admin is viewing, navigate back to admin orders page
-            // Otherwise, navigate to order history
-            if (isAdmin) {
-              navigate('/admin/orders', { 
-                state: { 
-                  orderId: updatedOrder.id
-                } 
-              });
-            } else {
-              // Navigate to order history with order ID to auto-expand details
-              navigate('/home/order-history', { 
-                state: { 
-                  autoExpandOrderId: updatedOrder.id,
-                  order: updatedOrder 
-                } 
-              });
-            }
-            return; // Exit early to prevent setting state
+          // Only navigate away when order is delivered (not completed)
+          // Completed orders should show live tracking
+          if (newStatus === 'delivered' && previousStatus !== 'delivered') {
+            // Wait a moment to show delivery status, then navigate
+            setTimeout(() => {
+              if (isAdmin) {
+                navigate('/admin/orders', { 
+                  state: { 
+                    orderId: updatedOrder.id
+                  } 
+                });
+              } else {
+                // Navigate to order history with order ID to auto-expand details
+                navigate('/home/order-history', { 
+                  state: { 
+                    autoExpandOrderId: updatedOrder.id,
+                    order: updatedOrder 
+                  } 
+                });
+              }
+            }, 3000); // Wait 3 seconds before navigating
           }
           
           setOrder(updatedOrder);
@@ -115,19 +116,25 @@ const OrderTrackingPage: React.FC = () => {
 
       {/* Content */}
       <div className="px-4 py-6">
-        {/* Map Section */}
-        <div className="rounded-2xl overflow-hidden mb-6 shadow-lg" style={{ border: '1px solid #D4A76A40' }}>
-          <iframe 
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3582.714352417745!2d28.058333400000002!3d-26.1082416!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1e95732cb5a3d97b%3A0xde6336359d73b224!2s1st%20Floor%2C%20Nutun%2C%20115%20West%20St%2C%20Sandown%2C%20Sandton%2C%202031!5e0!3m2!1sen!2sza!4v1761775093158!5m2!1sen!2sza" 
-            width="100%" 
-            height="300" 
-            style={{ border: 0 }}
-            allowFullScreen={true}
-            loading="lazy" 
-            referrerPolicy="no-referrer-when-downgrade"
-            title="Order Location Map"
-          />
-        </div>
+        {/* Live Tracking Map - Show when driver assigned and order completed */}
+        {(order.deliveryPerson && order.status === 'completed' && order.status !== 'delivered') ? (
+          <div className="mb-6">
+            <DeliveryMap 
+              orderId={order.id} 
+              showRoute={true}
+              customerAddress={order.address}
+            />
+          </div>
+        ) : (
+          /* Static Map - Show when tracking not available */
+          <div className="rounded-2xl overflow-hidden mb-6 shadow-lg" style={{ border: '1px solid #D4A76A40' }}>
+            <DeliveryMap 
+              orderId={order.id} 
+              showRoute={false}
+              customerAddress={order.address}
+            />
+          </div>
+        )}
 
         {/* Order Info Card */}
         <div className="rounded-2xl p-5 mb-6 backdrop-blur-sm shadow-lg" style={{ backgroundColor: '#1E1E1E', border: '1px solid #D4A76A40' }}>
@@ -206,11 +213,23 @@ const OrderTrackingPage: React.FC = () => {
           />
         </div>
 
-        {/* Estimated Time */}
-        {order.status !== 'delivered' && order.status !== 'cancelled' && (
+        {/* Estimated Time - Only show when tracking is active */}
+        {order.deliveryPerson && order.status === 'completed' && order.status !== 'delivered' && (
           <div className="mt-6 text-center">
             <p className="text-gray-400 text-sm mb-2">Estimated Delivery Time</p>
-            <p className="text-2xl font-bold" style={{ color: '#D4A76A' }}>20-25 minutes</p>
+            <p className="text-2xl font-bold" style={{ color: '#D4A76A' }}>
+              {/* ETA will be shown in the map component */}
+              Track on map above
+            </p>
+          </div>
+        )}
+        
+        {/* Info message when waiting for driver */}
+        {!order.deliveryPerson && order.status !== 'delivered' && order.status !== 'cancelled' && (
+          <div className="mt-6 text-center p-4 rounded-2xl" style={{ backgroundColor: '#1E1E1E', border: '1px solid #D4A76A40' }}>
+            <p className="text-gray-400 text-sm">
+              Waiting for driver assignment and order completion to start live tracking
+            </p>
           </div>
         )}
       </div>

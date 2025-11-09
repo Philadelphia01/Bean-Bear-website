@@ -15,6 +15,7 @@ import {
   serverTimestamp
 } from 'firebase/firestore';
 import { cacheService } from '../utils/cache';
+import trackingService, { SHOP_ADDRESS } from '../services/trackingService';
 
 // Menu Services
 export const menuService = {
@@ -251,10 +252,58 @@ export const orderService = {
   // Update order
   updateOrder: async (orderId: string, updates: any) => {
     const orderRef = doc(db, 'orders', orderId);
+    
+    // Get current order to check status changes
+    const currentOrderDoc = await getDoc(orderRef);
+    const currentData = currentOrderDoc.exists() ? currentOrderDoc.data() : null;
+    
+    // Update order
     await updateDoc(orderRef, {
       ...updates,
       updatedAt: serverTimestamp()
     });
+
+    // Handle tracking based on status and driver assignment
+    if (currentData && (updates.status !== undefined || updates.deliveryPerson !== undefined)) {
+      const newStatus = updates.status !== undefined ? updates.status : currentData.status;
+      const newDeliveryPerson = updates.deliveryPerson !== undefined ? updates.deliveryPerson : currentData.deliveryPerson;
+      const hadDeliveryPerson = !!currentData.deliveryPerson;
+      const hasDeliveryPerson = !!newDeliveryPerson;
+      const wasCompleted = currentData.status === 'completed';
+      const isCompleted = newStatus === 'completed';
+      
+      // Check if we should start tracking:
+      // 1. Driver just assigned AND order is completed
+      // 2. Order just completed AND driver is assigned
+      const shouldStartTracking = 
+        (hasDeliveryPerson && isCompleted) && 
+        (!hadDeliveryPerson || !wasCompleted); // Only start if this is a new condition
+      
+      if (shouldStartTracking) {
+        try {
+          await trackingService.startTracking(
+            orderId,
+            newDeliveryPerson.id,
+            currentData.address || '',
+            currentData.customerLat,
+            currentData.customerLng
+          );
+          console.log('✅ Tracking started for order:', orderId, '- Driver:', newDeliveryPerson.name, '- Status: completed');
+        } catch (error) {
+          console.error('Error starting tracking:', error);
+        }
+      }
+      
+      // Stop tracking when order is delivered
+      if (newStatus === 'delivered' && currentData.status !== 'delivered') {
+        try {
+          await trackingService.stopTracking(orderId);
+          console.log('🛑 Tracking stopped for order:', orderId, '- Status: delivered');
+        } catch (error) {
+          console.error('Error stopping tracking:', error);
+        }
+      }
+    }
   }
 };
 

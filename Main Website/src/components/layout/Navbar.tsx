@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, NavLink, useLocation } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { CoffeeIcon, MenuIcon, X, Globe } from 'lucide-react';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -8,10 +8,56 @@ const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const { cartItems } = useCart();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, loading } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  
+  // Handle logo click with explicit navigation
+  const handleLogoClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    console.log('🔵 Bear&Bean logo clicked', { 
+      isAuthenticated, 
+      loading, 
+      user: user?.name,
+      currentPath: location.pathname
+    });
+    
+    // If already on the target page, don't navigate
+    if (isAuthenticated && user && location.pathname === '/admin') {
+      console.log('📍 Already on /admin, skipping navigation');
+      return;
+    }
+    
+    if (isAuthenticated && user && location.pathname === '/login') {
+      console.log('📍 On /login but authenticated, navigating to /admin');
+      navigate('/admin', { replace: true });
+      return;
+    }
+    
+    if (loading) {
+      console.log('⏳ Auth still loading, waiting 100ms...');
+      setTimeout(() => {
+        if (isAuthenticated && user) {
+          navigate('/admin', { replace: false });
+        } else {
+          navigate('/login', { replace: false });
+        }
+      }, 100);
+      return;
+    }
+    
+    if (isAuthenticated && user) {
+      console.log('✅ User authenticated, navigating to /admin');
+      navigate('/admin', { replace: false });
+    } else {
+      console.log('❌ User not authenticated, navigating to /login');
+      navigate('/login', { replace: false });
+    }
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -30,10 +76,15 @@ const Navbar: React.FC = () => {
     <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-dark shadow-lg' : 'bg-transparent'}`}>
       <div className="container py-4 mx-auto">
         <nav className="flex items-center justify-between">
-          <Link to="/login" className="flex items-center space-x-2">
-            <CoffeeIcon className="w-8 h-8 text-primary" />
-            <span className="text-xl font-bold text-white font-serif">Bear&Bean</span>
-          </Link>
+          <button 
+            onClick={handleLogoClick}
+            className="flex items-center space-x-2 hover:opacity-80 transition-opacity cursor-pointer bg-transparent border-none outline-none focus:outline-none"
+            type="button"
+            aria-label="Navigate to admin dashboard or login"
+          >
+            <CoffeeIcon className="w-8 h-8 text-primary pointer-events-none" />
+            <span className="text-xl font-bold text-white font-serif pointer-events-none">Bear&Bean</span>
+          </button>
 
           {/* Desktop Nav */}
           <div className="hidden md:flex md:items-center md:space-x-8">
@@ -81,10 +132,18 @@ const Navbar: React.FC = () => {
             </button>
             
             <div className="flex flex-col items-center justify-center h-full space-y-8">
-              <Link to="/login" className="flex items-center space-x-2 mb-8">
+              <button 
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleLogoClick(e);
+                  setIsOpen(false);
+                }}
+                className="flex items-center space-x-2 mb-8 hover:opacity-80 transition-opacity cursor-pointer"
+                type="button"
+              >
                 <CoffeeIcon className="w-8 h-8 text-primary" />
                 <span className="text-xl font-bold text-white font-serif">Bear&Bean</span>
-              </Link>
+              </button>
               
               <NavLink to="/" className="text-xl">
                 Home

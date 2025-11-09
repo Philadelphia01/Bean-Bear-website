@@ -10,7 +10,7 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
   children, 
-  requiredRole = 'waiter' // Default minimum role
+  requiredRole // No default - if undefined, only require authentication
 }) => {
   const { isAuthenticated, hasPermission, loading, user } = useAuth();
 
@@ -26,19 +26,61 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
-  // Strict check: must have both isAuthenticated flag AND a user object AND Firebase currentUser
-  // This ensures we don't allow access if any check fails
-  // Double-checking with Firebase's currentUser for extra security
+  // Check authentication - be more lenient with the check
+  // Primary check: isAuthenticated and user object
+  // Firebase currentUser might be slightly delayed, so don't require it immediately
   const firebaseUser = auth.currentUser;
-  if (!isAuthenticated || !user || !firebaseUser) {
+  
+  console.log('🔒 ProtectedRoute check:', {
+    isAuthenticated,
+    hasUser: !!user,
+    hasFirebaseUser: !!firebaseUser,
+    userRole: user?.role,
+    requiredRole: requiredRole || 'none (auth only)'
+  });
+
+  // Primary authentication check - ALL protected routes require authentication
+  if (!isAuthenticated || !user) {
+    console.log('❌ ProtectedRoute: Not authenticated, redirecting to /login');
     return <Navigate to="/login" replace />;
   }
 
-  if (requiredRole && !hasPermission(requiredRole)) {
-    // User doesn't have required permissions
-    return <Navigate to="/" replace />;
+  // Optional: Check Firebase user (but don't block if it's temporarily null)
+  // This can happen during auth state transitions
+  if (!firebaseUser) {
+    console.warn('⚠️ ProtectedRoute: Firebase user is null, but auth state says authenticated. Allowing access.');
+    // Still allow access if isAuthenticated and user object exist
+    // Firebase user might sync shortly
   }
 
+  // Check permissions ONLY if a requiredRole is specified
+  // If requiredRole is undefined, only authentication is required
+  if (requiredRole && !hasPermission(requiredRole)) {
+    console.log('❌ ProtectedRoute: Insufficient permissions. User role:', user.role, 'Required:', requiredRole);
+    // Show a helpful message instead of redirecting
+    return (
+      <div className="flex justify-center items-center h-screen bg-dark">
+        <div className="text-center max-w-md p-8 bg-dark-light rounded-lg border border-red-500/20">
+          <h2 className="text-2xl font-bold text-white mb-4">Access Denied</h2>
+          <p className="text-gray-400 mb-2">
+            You don't have permission to access this page.
+          </p>
+          <p className="text-gray-500 text-sm mb-6">
+            Your role: <span className="text-primary font-medium">{user.role}</span><br/>
+            Required role: <span className="text-primary font-medium">{requiredRole}</span> or higher
+          </p>
+          <button
+            onClick={() => window.history.back()}
+            className="btn btn-primary"
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  console.log('✅ ProtectedRoute: Access granted');
   return <>{children}</>;
 };
 

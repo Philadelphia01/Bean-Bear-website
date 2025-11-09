@@ -14,6 +14,7 @@ import {
   addDoc,
   serverTimestamp
 } from 'firebase/firestore';
+import trackingService from '../services/trackingService';
 
 // Menu Services
 export const menuService = {
@@ -251,12 +252,46 @@ export const orderService = {
     // Get order to find customer for notification
     const orderDoc = await getDoc(docRef);
     const order = orderDoc.data();
+    const previousStatus = order?.status;
     
     // Update order status
     await updateDoc(docRef, {
       status,
       updatedAt: serverTimestamp()
     });
+    
+    // Handle tracking based on status changes
+    if (order && previousStatus !== status) {
+      const deliveryPerson = order.deliveryPerson;
+      const isCompleted = status === 'completed';
+      const wasCompleted = previousStatus === 'completed';
+      const isDelivered = status === 'delivered';
+      const wasDelivered = previousStatus === 'delivered';
+      
+      // Start tracking when order is completed and driver is assigned
+      if (isCompleted && !wasCompleted && deliveryPerson) {
+        try {
+          await trackingService.startTracking(
+            id,
+            deliveryPerson.id,
+            order.address || '',
+            order.customerLat,
+            order.customerLng
+          );
+        } catch (error) {
+          console.error('Error starting tracking:', error);
+        }
+      }
+      
+      // Stop tracking when order is delivered
+      if (isDelivered && !wasDelivered) {
+        try {
+          await trackingService.stopTracking(id);
+        } catch (error) {
+          console.error('Error stopping tracking:', error);
+        }
+      }
+    }
     
     // Trigger notification (this should be done via Cloud Functions in production)
     if (order?.customerId || order?.userId) {
@@ -290,10 +325,32 @@ export const orderService = {
   // Update delivery person
   updateDeliveryPerson: async (id: string, deliveryPerson: any) => {
     const docRef = doc(db, 'orders', id);
+    
+    // Get current order data
+    const orderDoc = await getDoc(docRef);
+    const order = orderDoc.data();
+    
+    // Update delivery person
     await updateDoc(docRef, {
       deliveryPerson,
       updatedAt: serverTimestamp()
     });
+    
+    // Handle tracking - start if order is already completed and driver is being assigned
+    if (order && deliveryPerson && order.status === 'completed') {
+      try {
+        await trackingService.startTracking(
+          id,
+          deliveryPerson.id,
+          order.address || '',
+          order.customerLat,
+          order.customerLng
+        );
+        console.log('✅ Tracking started for order:', id, '- Driver assigned to completed order');
+      } catch (error) {
+        console.error('Error starting tracking:', error);
+      }
+    }
   },
 
   // Update pickup time

@@ -7,6 +7,25 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:904070401127:android:7eab52e6f28d34913658c2",
+        "android_client_info": {
+          "package_name": "com.coffee.coffeeemporium"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA_9UEaThmKkDEqqOIC2RKhrO8RaC0c00c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:904070401127:android:c6c8abf5df1b7e5d3658c2",
         "android_client_info": {
           "package_name": "com.example.app"
