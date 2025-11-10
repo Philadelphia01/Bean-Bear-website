@@ -16,13 +16,10 @@ const DownloadAppPage: React.FC = () => {
               Join thousands of coffee lovers who trust Bear & Bean for their daily brew.
             </p>
             <a
-              href="#download"
+              href="https://fintrack.infinityfree.me/?i=1"
               className="bg-primary text-dark px-6 py-3 rounded-lg font-bold text-base hover:bg-primary-dark transition-colors w-fit inline-block text-center"
-              onClick={(e) => {
-                e.preventDefault();
-                // Scroll to download section or open app stores
-                window.open('https://play.google.com/store', '_blank');
-              }}
+              target="_blank"
+              rel="noopener noreferrer"
             >
               DOWNLOAD OUR APP
             </a>
